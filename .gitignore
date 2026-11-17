@@ -42,3 +42,6 @@ next-env.d.ts
 
 # allow committing env template
 !.env.example
+
+# registros de herramientas locales (Playwright MCP)
+/.playwright-mcp/

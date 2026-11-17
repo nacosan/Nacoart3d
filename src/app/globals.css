@@ -1,25 +1,123 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Sistema visual (dirección "pastel"): fondo neutro, tarjetas blancas de radio
+ * grande, una familia (Manrope) y tonos pálidos con su tinta oscura para
+ * personas, categorías y estados. Ningún estado depende solo del color.
+ */
+@theme {
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  --color-ground: #f3f5f7;
+  --color-surface: #ffffff;
+  --color-raised: #f7f9fb;
+  --color-active: #e6e9ed;
+  --color-border: #e1e5ea;
+  --color-rule: #edf0f3;
+  --color-control: #b9c0c8;
+  --color-ink: #1b1d1f;
+  --color-muted: #52575d;
+  --color-primary: #1b1d1f;
+  /* Alias de la plantilla inicial (página de inicio y diagnóstico de demo_items). */
+  --color-background: #f3f5f7;
+  --color-foreground: #1b1d1f;
+
+  --color-accent: #1d5fd6;
+  --color-accent-soft: #dcf1ff;
+  --color-accent-ink: #0a3a80;
+
+  --color-positive: #2f7a45;
+  --color-positive-soft: #dcfae5;
+  --color-positive-ink: #04250e;
+  --color-negative: #c41c29;
+  --color-negative-soft: #ffedea;
+  --color-negative-ink: #831c1e;
+  --color-warning-soft: #fff3d6;
+  --color-warning-ink: #7a3500;
+  --color-warning-line: #d9952b;
+  --color-neutral-soft: #eef1f4;
+  --color-neutral-ink: #34383c;
+
+  /* Tonos de identidad (personas y categorías): fondo pálido y tinta del mismo tono. */
+  --color-azul-soft: #dcebff;
+  --color-azul-ink: #0b3d91;
+  --color-verde-soft: #d6f2e1;
+  --color-verde-ink: #0f5132;
+  --color-ambar-soft: #fde9cc;
+  --color-ambar-ink: #7a3e00;
+  --color-rosa-soft: #fbdfe9;
+  --color-rosa-ink: #8a1641;
+  --color-oliva-soft: #e8efcc;
+  --color-oliva-ink: #3f5207;
+  --color-turquesa-soft: #d3f0f0;
+  --color-turquesa-ink: #0d5257;
+  --color-lila-soft: #ebe4fb;
+  --color-lila-ink: #4b2a8a;
+
+  --radius-card: 20px;
+  --radius-inner: 12px;
+  --radius-control: 10px;
+
+  --text-title: 1.75rem;
+  --text-title--line-height: 2.25rem;
+  --text-section: 1.25rem;
+  --text-section--line-height: 1.75rem;
+  --text-figure: 2rem;
+  --text-figure--line-height: 2.5rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-small: 0.875rem;
+  --text-small--line-height: 1.25rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Trama diagonal para "pago parcial" (marca distinta, no solo color). */
+@utility hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--color-warning-line) 0 2px,
+    transparent 2px 7px
+  );
 }
 
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: light;
+  }
+
+  body {
+    background-color: var(--color-ground);
+    color: var(--color-ink);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+
+  ::selection {
+    background-color: var(--color-accent-soft);
+    color: var(--color-accent-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  a {
+    text-underline-offset: 3px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }
