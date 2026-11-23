@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CategoryBars } from "@/components/charts/CategoryBars";
 import { ColumnChart } from "@/components/charts/ColumnChart";
 import { Meter } from "@/components/charts/Meter";
+import { SpendDonut } from "@/components/charts/SpendDonut";
 import { LoadProblem } from "@/components/app/LoadProblem";
 import { ReceivedInvitations } from "@/components/groups/ReceivedInvitations";
 import { ButtonLink } from "@/components/ui/Button";
@@ -21,7 +22,9 @@ import { formatMoney, formatPercent, percentOf, type Currency } from "@/lib/fina
 import {
   categoryTotals,
   forecasts,
+  isRunning,
   missingRenewals,
+  monthlyCost,
   paidByMonth,
   totalsByCurrency,
   type Forecast,
@@ -189,8 +192,8 @@ function HeroCard({
 
   return (
     <section aria-labelledby="gasto" className="rounded-card bg-surface p-6 sm:p-9">
-      <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-        <div>
+      <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0">
           <h2 id="gasto" className="text-body text-muted">
             Tus suscripciones te cuestan
           </h2>
@@ -209,10 +212,18 @@ function HeroCard({
               {row.currency} ({row.count === 1 ? "1 suscripción" : `${row.count} suscripciones`}).
             </p>
           ))}
+          <ButtonLink href="/suscripciones/nueva" variant="primary" icon="plus" className="mt-6">
+            Añadir suscripción
+          </ButtonLink>
         </div>
-        <ButtonLink href="/suscripciones/nueva" variant="primary" icon="plus">
-          Añadir suscripción
-        </ButtonLink>
+        <div className="w-full md:w-72 md:flex-none">
+          <SpendDonut
+            currency={main.currency}
+            items={subs
+              .filter((sub) => isRunning(sub) && sub.currency === main.currency)
+              .map((sub) => ({ id: sub.id, name: sub.name, categoryId: sub.categoryId, amount: monthlyCost(sub, today) }))}
+          />
+        </div>
       </div>
 
       {budget ? (
