@@ -4,15 +4,15 @@ import type { NavItem } from "./nav";
 
 export function NavList({ items, current }: { items: NavItem[]; current: string }) {
   return (
-    <ul className="flex flex-col gap-0.5">
+    <ul className="flex flex-col gap-1">
       {items.map((item) => {
         const isCurrent = item.href !== null && item.href === current;
         const content = (
           <>
             <Icon name={item.icon} />
-            <span className="flex-1">{item.label}</span>
+            <span className="flex-1 group-data-collapsed/sidebar:sr-only">{item.label}</span>
             {item.count ? (
-              <span className="rounded-full bg-accent-soft px-2 text-small font-semibold text-accent-ink tabular-nums">
+              <span className="rounded-full bg-accent-soft px-2 text-small font-semibold text-accent-ink tabular-nums group-data-collapsed/sidebar:absolute group-data-collapsed/sidebar:right-0 group-data-collapsed/sidebar:top-0 group-data-collapsed/sidebar:px-1.5 group-data-collapsed/sidebar:text-[0.6875rem]">
                 {item.count.value}
                 <span className="sr-only"> {item.count.noun}</span>
               </span>
@@ -20,13 +20,14 @@ export function NavList({ items, current }: { items: NavItem[]; current: string 
           </>
         );
         return (
-          <li key={item.label}>
+          <li key={item.label} className="relative">
             {item.href ? (
               <Link
                 href={item.href}
                 aria-current={isCurrent ? "page" : undefined}
-                className={`flex h-10 items-center gap-2.5 rounded-control px-3 text-small transition-colors duration-150 ${
-                  isCurrent ? "bg-active font-semibold text-ink" : "text-muted hover:bg-active/60 hover:text-ink"
+                title={item.label}
+                className={`flex h-11 group-data-collapsed/sidebar:justify-center group-data-collapsed/sidebar:px-0 items-center gap-3 rounded-full px-4 text-small transition-colors duration-150 ${
+                  isCurrent ? "bg-surface font-semibold text-ink" : "text-muted hover:bg-surface/70 hover:text-ink"
                 }`}
               >
                 {content}
@@ -35,7 +36,7 @@ export function NavList({ items, current }: { items: NavItem[]; current: string 
               <span
                 aria-disabled="true"
                 title="No incluida en el prototipo"
-                className="flex h-10 cursor-not-allowed items-center gap-2.5 rounded-control px-3 text-small text-muted"
+                className="flex h-11 group-data-collapsed/sidebar:justify-center group-data-collapsed/sidebar:px-0 cursor-not-allowed items-center gap-3 rounded-full px-4 text-small text-muted"
               >
                 {content}
                 <span className="sr-only">(no incluida en el prototipo)</span>

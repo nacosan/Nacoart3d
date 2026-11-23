@@ -1,7 +1,7 @@
 import { HUE_CLASSES, HUE_FILL } from "@/components/ui/tones";
 import { Money } from "@/components/ui/Money";
 import { CATEGORIES, type CategoryId } from "@/lib/catalog";
-import { formatPercent, type Cents } from "@/lib/finance/money";
+import { formatPercent, type Cents, type Currency } from "@/lib/finance/money";
 
 export interface CategoryRow {
   category: CategoryId;
@@ -11,7 +11,7 @@ export interface CategoryRow {
 }
 
 /** Lista ordenada por importe: nombre, importe, porcentaje y una barra fina en el tono de la categoría. */
-export function CategoryBars({ rows, label }: { rows: CategoryRow[]; label: string }) {
+export function CategoryBars({ rows, label, currency = "EUR" }: { rows: CategoryRow[]; label: string; currency?: Currency }) {
   const largest = Math.max(0, ...rows.map((row) => row.amount));
   return (
     <ul className="flex flex-col gap-3" aria-label={label}>
@@ -25,7 +25,7 @@ export function CategoryBars({ rows, label }: { rows: CategoryRow[]; label: stri
                 <span className="truncate text-small">{row.name}</span>
               </span>
               <span className="flex items-baseline gap-2 text-small">
-                <Money cents={row.amount} className="font-semibold" />
+                <Money cents={row.amount} currency={currency} className="font-semibold" />
                 <span className="w-12 text-right text-muted tabular-nums">{formatPercent(row.share)}</span>
               </span>
             </div>

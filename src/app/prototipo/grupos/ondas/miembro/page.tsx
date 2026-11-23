@@ -13,7 +13,7 @@ import {
   SplitPanel,
   type MovementRow,
 } from "@/components/prototype/GroupPieces";
-import { Meter } from "@/components/prototype/Meter";
+import { Meter } from "@/components/charts/Meter";
 import { PrototypeNotice } from "@/components/prototype/PrototypeNotice";
 import { SeatRow } from "@/components/prototype/SeatRow";
 import { memberSegments } from "@/components/prototype/coverage";

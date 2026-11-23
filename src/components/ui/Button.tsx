@@ -1,16 +1,21 @@
 import Link from "next/link";
 import { Icon, type IconName } from "./Icon";
 
-type Variant = "primary" | "secondary" | "ghost";
+type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-primary text-white hover:bg-[#33373b] active:bg-black",
-  secondary: "bg-surface text-ink border border-control hover:bg-raised active:bg-active",
-  ghost: "text-ink hover:bg-active active:bg-[#dcdfe3]",
+  primary: "bg-primary text-white hover:bg-primary-hover active:bg-accent-ink",
+  secondary: "bg-surface text-ink border border-border hover:bg-raised active:bg-active",
+  ghost: "text-ink hover:bg-active active:bg-active",
+  danger: "bg-surface text-negative-ink border border-negative/40 hover:bg-negative-soft",
 };
 
 const BASE =
-  "inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-control px-4 text-small font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:border-border disabled:bg-active disabled:text-muted";
+  "inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 text-small font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:border-border disabled:bg-active disabled:text-muted";
+
+export function buttonClasses(variant: Variant = "secondary", extra = "") {
+  return `${BASE} ${VARIANTS[variant]} ${extra}`;
+}
 
 export function Button({
   variant = "secondary",
@@ -19,17 +24,33 @@ export function Button({
   disabled,
   describedBy,
   type = "button",
+  name,
+  value,
+  className = "",
+  onClick,
 }: {
   variant?: Variant;
   icon?: IconName;
   children: React.ReactNode;
+  onClick?: () => void;
   disabled?: boolean;
   /** Id del texto que explica por qué está desactivado. */
   describedBy?: string;
   type?: "button" | "submit";
+  name?: string;
+  value?: string;
+  className?: string;
 }) {
   return (
-    <button type={type} disabled={disabled} aria-describedby={describedBy} className={`${BASE} ${VARIANTS[variant]}`}>
+    <button
+      type={type}
+      disabled={disabled}
+      aria-describedby={describedBy}
+      name={name}
+      value={value}
+      onClick={onClick}
+      className={buttonClasses(variant, className)}
+    >
       {icon ? <Icon name={icon} /> : null}
       {children}
     </button>
@@ -41,14 +62,16 @@ export function ButtonLink({
   variant = "secondary",
   icon,
   children,
+  className = "",
 }: {
   href: string;
   variant?: Variant;
   icon?: IconName;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <Link href={href} className={`${BASE} ${VARIANTS[variant]}`}>
+    <Link href={href} className={buttonClasses(variant, className)}>
       {icon ? <Icon name={icon} /> : null}
       {children}
     </Link>

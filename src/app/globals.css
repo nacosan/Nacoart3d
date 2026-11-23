@@ -1,44 +1,46 @@
 @import "tailwindcss";
 
 /*
- * Sistema visual (dirección "pastel"): fondo neutro, tarjetas blancas de radio
- * grande, una familia (Manrope) y tonos pálidos con su tinta oscura para
- * personas, categorías y estados. Ningún estado depende solo del color.
+ * Sistema visual v2 ("amigable"): fondo cálido, tarjetas blancas muy
+ * redondeadas, más aire entre bloques y un acento añil para las acciones.
+ * Se mantienen los nombres de los tokens del v1 (etiqueta git diseno-v1).
+ * Ningún estado depende solo del color.
  */
 @theme {
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 
-  --color-ground: #f3f5f7;
+  --color-ground: #f6f4f0;
   --color-surface: #ffffff;
-  --color-raised: #f7f9fb;
-  --color-active: #e6e9ed;
-  --color-border: #e1e5ea;
-  --color-rule: #edf0f3;
-  --color-control: #b9c0c8;
-  --color-ink: #1b1d1f;
-  --color-muted: #52575d;
-  --color-primary: #1b1d1f;
-  /* Alias de la plantilla inicial (página de inicio y diagnóstico de demo_items). */
-  --color-background: #f3f5f7;
-  --color-foreground: #1b1d1f;
+  --color-raised: #faf8f5;
+  --color-active: #eeeae4;
+  --color-border: #e7e2da;
+  --color-rule: #f0ece6;
+  --color-control: #c8c0b5;
+  --color-ink: #1f1d1a;
+  --color-muted: #5d5850;
+  --color-primary: #4338ca;
+  --color-primary-hover: #3730a3;
+  /* Alias de la plantilla inicial. */
+  --color-background: #f6f4f0;
+  --color-foreground: #1f1d1a;
 
-  --color-accent: #1d5fd6;
-  --color-accent-soft: #dcf1ff;
-  --color-accent-ink: #0a3a80;
+  --color-accent: #4f46e5;
+  --color-accent-soft: #eceafd;
+  --color-accent-ink: #3730a3;
 
   --color-positive: #2f7a45;
-  --color-positive-soft: #dcfae5;
-  --color-positive-ink: #04250e;
+  --color-positive-soft: #dff5e6;
+  --color-positive-ink: #12452a;
   --color-negative: #c41c29;
-  --color-negative-soft: #ffedea;
+  --color-negative-soft: #ffece8;
   --color-negative-ink: #831c1e;
-  --color-warning-soft: #fff3d6;
+  --color-warning-soft: #fff1d6;
   --color-warning-ink: #7a3500;
   --color-warning-line: #d9952b;
-  --color-neutral-soft: #eef1f4;
-  --color-neutral-ink: #34383c;
+  --color-neutral-soft: #f0ede8;
+  --color-neutral-ink: #3a3631;
 
-  /* Tonos de identidad (personas y categorías): fondo pálido y tinta del mismo tono. */
+/* Tonos de identidad (personas y categorías): fondo pálido y tinta del mismo tono. */
   --color-azul-soft: #dcebff;
   --color-azul-ink: #0b3d91;
   --color-verde-soft: #d6f2e1;
@@ -54,10 +56,12 @@
   --color-lila-soft: #ebe4fb;
   --color-lila-ink: #4b2a8a;
 
-  --radius-card: 20px;
-  --radius-inner: 12px;
-  --radius-control: 10px;
+  --radius-card: 28px;
+  --radius-inner: 18px;
+  --radius-control: 14px;
 
+  --text-hero: 2.75rem;
+  --text-hero--line-height: 3.25rem;
   --text-title: 1.75rem;
   --text-title--line-height: 2.25rem;
   --text-section: 1.25rem;

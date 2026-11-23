@@ -20,12 +20,12 @@ export function Panel({
   return (
     <Tag
       aria-labelledby={title && titleId ? titleId : undefined}
-      className={`min-w-0 rounded-card bg-surface p-5 sm:p-6 ${className}`}
+      className={`min-w-0 rounded-card bg-surface p-5 sm:p-7 ${className}`}
     >
       {title || aside ? (
-        <div className="mb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <div className="mb-5 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           {title ? (
-            <h2 id={titleId} className="text-section font-semibold">
+            <h2 id={titleId} className="scroll-mt-24 text-section font-semibold">
               {title}
             </h2>
           ) : null}

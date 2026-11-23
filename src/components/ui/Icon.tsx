@@ -22,11 +22,20 @@ const PATHS = {
   menu: "M4 7h16M4 12h16M4 17h16",
   close: "M6 6l12 12M18 6 6 18",
   chevron: "M9.5 6l6 6-6 6",
+  chevronDown: "M6 9.5l6 6 6-6",
+  chevronUp: "M6 14.5l6-6 6 6",
   info: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 11v5.5M12 7.5h.01",
   plus: "M12 5v14M5 12h14",
   userOff: "M12 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM5 20a7 7 0 0 1 11.2-5.6M17 17l4 4M21 17l-4 4",
   lock: "M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3",
   send: "M4 12 20 4l-4 16-4-7zM12 13l8-9",
+  logout: "M14 4h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4M10 16l-4-4 4-4M6 12h10",
+  pencil: "M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4",
+  trash: "M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13M10 11v5M14 11v5",
+  back: "M14.5 6l-6 6 6 6",
+  external: "M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5",
+  sidebar: "M4 5h16v14H4zM9.5 5v14",
+  chart: "M4 20h16M7 16v-4M12 16V8M17 16v-7",
 } as const;
 
 export type IconName = keyof typeof PATHS;

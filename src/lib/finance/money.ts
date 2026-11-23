@@ -108,3 +108,42 @@ const percentFormat = new Intl.NumberFormat("es-ES", {
 export function formatPercent(value: number | null): string {
   return value === null ? "—" : percentFormat.format(value / 100);
 }
+
+export const CURRENCIES: readonly Currency[] = ["EUR", "USD", "GBP"];
+
+export function isCurrency(value: unknown): value is Currency {
+  return typeof value === "string" && (CURRENCIES as readonly string[]).includes(value);
+}
+
+/**
+ * Convierte lo que escribe una persona ("12,99", "1.234,5", "7", "7.99") en
+ * céntimos enteros, sin pasar por coma flotante. Devuelve null si no es un
+ * importe válido (negativo, más de dos decimales o texto).
+ */
+export function parseAmountToCents(input: string): Cents | null {
+  const raw = input.replace(/[\s €$£]/g, "");
+  if (raw === "") return null;
+  let normalized: string;
+  if (raw.includes(",")) {
+    // Formato español: los puntos son separadores de miles.
+    if (!/^\d{1,3}(\.\d{3})*(,\d{0,2})?$|^\d+(,\d{0,2})?$/.test(raw)) return null;
+    normalized = raw.replace(/\./g, "").replace(",", ".");
+  } else if (/^\d+\.\d{1,2}$/.test(raw)) {
+    normalized = raw;
+  } else if (/^\d{1,3}(\.\d{3})+$|^\d+$/.test(raw)) {
+    normalized = raw.replace(/\./g, "");
+  } else {
+    return null;
+  }
+  const [whole, fraction = ""] = normalized.split(".");
+  const cents = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+  return Number.isSafeInteger(cents) ? cents : null;
+}
+
+/** "12,99" para rellenar un campo de importe. */
+export function centsToInput(cents: Cents): string {
+  assertCents(cents);
+  const whole = Math.floor(cents / 100);
+  const fraction = String(cents % 100).padStart(2, "0");
+  return `${whole},${fraction}`;
+}

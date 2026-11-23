@@ -1,5 +1,4 @@
-import type { Cents } from "@/lib/finance/money";
-import { formatMoney } from "@/lib/finance/money";
+import { formatMoney, type Cents, type Currency } from "@/lib/finance/money";
 
 export interface Column {
   key: string;
@@ -10,7 +9,9 @@ export interface Column {
   highlight?: boolean;
 }
 
-const euros = new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0, useGrouping: "always" });
+function axisFormat(currency: Currency) {
+  return new Intl.NumberFormat("es-ES", { style: "currency", currency, maximumFractionDigits: 0, useGrouping: "always" });
+}
 
 /** Máximo "redondo" divisible en 4 tramos iguales (1, 2, 2,5 o 5 × 10^n por tramo). */
 function niceTop(max: Cents): Cents {
@@ -33,7 +34,8 @@ const TICKS = [
  * Columnas de un solo tono con escala y 5 líneas de referencia. La columna
  * destacada (el mes en curso) usa la tinta oscura del acento y se rotula.
  */
-export function ColumnChart({ columns, caption }: { columns: Column[]; caption: string }) {
+export function ColumnChart({ columns, caption, currency = "EUR" }: { columns: Column[]; caption: string; currency?: Currency }) {
+  const axis = axisFormat(currency);
   const max = Math.max(0, ...columns.map((column) => column.value));
   const top = niceTop(max);
 
@@ -43,7 +45,7 @@ export function ColumnChart({ columns, caption }: { columns: Column[]; caption: 
         {TICKS.map((tick) => (
           <div key={tick.fraction} className={`absolute inset-x-0 ${tick.className} border-t border-rule`}>
             <span className="absolute -left-14 w-12 -translate-y-1/2 text-right text-[0.75rem] text-muted tabular-nums">
-              {euros.format((top * tick.fraction) / 100)}
+              {axis.format((top * tick.fraction) / 100)}
             </span>
           </div>
         ))}
@@ -97,7 +99,7 @@ export function ColumnChart({ columns, caption }: { columns: Column[]; caption: 
           {columns.map((column) => (
             <tr key={column.key}>
               <th scope="row">{column.longLabel}</th>
-              <td>{formatMoney(column.value)}</td>
+              <td>{formatMoney(column.value, currency)}</td>
             </tr>
           ))}
         </tbody>

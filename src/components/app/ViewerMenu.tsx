@@ -1,0 +1,58 @@
+"use client";
+
+import { useContext, useId, useState } from "react";
+import { Avatar } from "@/components/ui/Avatar";
+import { Icon } from "@/components/ui/Icon";
+import type { Hue } from "@/lib/catalog";
+import { SidebarCollapsedContext } from "./Sidebar";
+
+/**
+ * Tu nombre con un desplegable de cuenta (cerrar sesión), cerrado al empezar.
+ * Con la barra lateral plegada solo se ve tu inicial, sin desplegable.
+ */
+export function ViewerMenu({
+  name,
+  initials,
+  hue,
+  actions,
+}: {
+  name: string;
+  initials: string;
+  hue: Hue;
+  actions?: React.ReactNode;
+}) {
+  const collapsed = useContext(SidebarCollapsedContext);
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+
+  if (collapsed) {
+    return (
+      <span title={name} className="flex justify-center rounded-inner bg-surface p-3">
+        <Avatar initials={initials} hue={hue} size="md" />
+        <span className="sr-only">{name}</span>
+      </span>
+    );
+  }
+
+  return (
+    <div className="rounded-inner bg-surface">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="flex w-full items-center gap-2.5 rounded-inner p-3 text-left hover:bg-raised"
+      >
+        <Avatar initials={initials} hue={hue} size="md" />
+        <span className="min-w-0 flex-1 truncate text-small font-semibold">{name}</span>
+        <Icon name={open ? "chevronUp" : "chevronDown"} className="text-muted" />
+        <span className="sr-only">: opciones de la cuenta</span>
+      </button>
+      {open && actions ? (
+        <div id={panelId} className="px-3 pb-3">
+          {actions}
+        </div>
+      ) : null}
+    </div>
+  );
+}

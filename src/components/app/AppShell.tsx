@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Avatar } from "@/components/ui/Avatar";
 import type { Hue } from "@/lib/catalog";
 import { MobileMenu } from "./MobileMenu";
 import { NavList } from "./NavList";
+import { Sidebar } from "./Sidebar";
+import { ViewerMenu } from "./ViewerMenu";
 import type { NavItem } from "./nav";
 
 export interface Viewer {
@@ -16,43 +17,49 @@ function ProductMark() {
     <span className="flex items-center gap-2.5">
       <span
         aria-hidden="true"
-        className="inline-flex size-8 items-center justify-center rounded-[10px] bg-accent text-small font-semibold text-white"
+        className="inline-flex size-9 items-center justify-center rounded-[12px] bg-primary text-small font-semibold text-white"
       >
         N
       </span>
-      <span className="text-body font-semibold">NacoArt3D</span>
+      <span className="text-body font-semibold group-data-collapsed/sidebar:sr-only">NacoArt3D</span>
     </span>
-  );
-}
-
-function ViewerRow({ viewer }: { viewer: Viewer }) {
-  return (
-    <div className="flex items-center gap-2.5 px-3">
-      <Avatar initials={viewer.initials} hue={viewer.hue} size="sm" />
-      <span className="min-w-0 truncate text-small">{viewer.name}</span>
-    </div>
   );
 }
 
 /**
  * Estructura: barra lateral con etiquetas sobre el fondo (escritorio) y barra
- * superior de 48 px con menú a pantalla completa (móvil y tableta).
+ * superior con menú a pantalla completa (móvil y tableta).
+ *
+ * `navigation` sustituye a la lista estática (la app real la marca según la URL).
  */
 export function AppShell({
-  nav,
-  current,
+  nav = [],
+  current = "",
+  navigation,
   viewer,
+  viewerActions,
   screenTitle,
   notice,
+  sidebarCollapsed = false,
   children,
 }: {
-  nav: NavItem[];
-  current: string;
+  nav?: NavItem[];
+  current?: string;
+  navigation?: React.ReactNode;
   viewer: Viewer;
+  viewerActions?: React.ReactNode;
   screenTitle: string;
   notice?: React.ReactNode;
+  /** Estado inicial de la barra lateral (cookie leída en el servidor). */
+  sidebarCollapsed?: boolean;
   children: React.ReactNode;
 }) {
+  const links = navigation ?? (
+    <nav aria-label="Principal" className="flex-1">
+      <NavList items={nav} current={current} />
+    </nav>
+  );
+  const home = nav[0]?.href ?? "/";
   return (
     <div className="flex min-h-dvh flex-col lg:flex-row">
       <a
@@ -62,22 +69,22 @@ export function AppShell({
         Saltar al contenido
       </a>
 
-      <aside className="hidden w-60 flex-none flex-col gap-6 px-3 py-6 lg:sticky lg:top-0 lg:flex lg:h-dvh">
-        <Link href={nav[0]?.href ?? "/"} className="rounded-control px-3">
-          <ProductMark />
-        </Link>
-        <nav aria-label="Principal" className="flex-1">
-          <NavList items={nav} current={current} />
-        </nav>
-        <ViewerRow viewer={viewer} />
-      </aside>
+      <Sidebar
+        initialCollapsed={sidebarCollapsed}
+        brand={
+          <Link href={home} className="rounded-control px-2 group-data-collapsed/sidebar:px-0">
+            <ProductMark />
+          </Link>
+        }
+      >
+        {links}
+        <ViewerMenu name={viewer.name} initials={viewer.initials} hue={viewer.hue} actions={viewerActions} />
+      </Sidebar>
 
-      <header className="sticky top-0 z-10 flex h-12 items-center justify-between border-b border-rule bg-ground px-2 lg:hidden">
+      <header className="sticky top-0 z-10 flex h-14 items-center justify-between bg-ground/95 px-2 backdrop-blur lg:hidden">
         <MobileMenu title="NacoArt3D">
-          <nav aria-label="Principal" className="flex-1">
-            <NavList items={nav} current={current} />
-          </nav>
-          <ViewerRow viewer={viewer} />
+          {links}
+          <ViewerMenu name={viewer.name} initials={viewer.initials} hue={viewer.hue} actions={viewerActions} />
         </MobileMenu>
         <span className="truncate text-body font-semibold">{screenTitle}</span>
         <span className="size-11" aria-hidden="true" />
@@ -85,7 +92,7 @@ export function AppShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {notice}
-        <main id="contenido" className="mx-auto w-full max-w-[1240px] flex-1 px-4 pb-16 pt-4 sm:px-6 lg:px-8 lg:pt-8">
+        <main id="contenido" className="mx-auto w-full max-w-[1120px] flex-1 px-4 pb-20 pt-4 sm:px-6 lg:px-10 lg:pt-10">
           {children}
         </main>
       </div>
