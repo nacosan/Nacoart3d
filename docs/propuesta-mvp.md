@@ -302,8 +302,9 @@ Cada punto es un valor predeterminado. Si estás de acuerdo, no hace falta que r
 - **Datos desconocidos.** Cualquier dato no verificable queda vacío y se muestra como "Desconocido".
 - **Condiciones.** Cada plan guarda sus condiciones (convivencia, familia, mismo hogar). La app las
   muestra al crear el grupo y al aceptar una invitación, y no ofrece nada para eludirlas.
-- **Sin marcas registradas.** No se usan logotipos de los servicios: cada servicio tiene un monograma
-  con el color de su categoría.
+- **Logotipos (cambio del 2026-11-24, a petición del usuario).** Los servicios conocidos muestran su
+  logotipo en su color de marca (trazos de Simple Icons, CC0, en `src/lib/brand-icons.ts`), solo para
+  identificarlos. Los que no tienen logotipo disponible mantienen el monograma con el color de su categoría.
 - **El prototipo de la fase 1 solo usa servicios y planes ficticios**, rotulados como tales. Ninguna
   condición comercial del prototipo describe un servicio real.
 
@@ -562,7 +563,7 @@ justo eso.
 - **La cara: las cifras y las personas.**
   - Cada importe en Manrope 600, con los céntimos en gris.
   - Cada participante con su inicial sobre su tono pálido propio (separados al menos 60° de tono).
-  - Cada servicio con un monograma sobre el tono de su categoría.
+  - Cada servicio con su logotipo o, si no lo hay, un monograma sobre el tono de su categoría.
 - **Elemento propio 1: la tira de cobertura.** Una fila por participante, con **un segmento por plazo
   de su acuerdo**: un plazo mensual ocupa un periodo y uno anual ocupa doce, como una sola barra.
   El líder ve la tira de todos; cada miembro solo la suya.
