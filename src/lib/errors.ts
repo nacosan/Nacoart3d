@@ -19,6 +19,8 @@ const DB_MESSAGES: Record<string, string> = {
   already_member: "Esa persona ya está en el grupo.",
   invitation_unavailable: "Esa invitación ya no está disponible.",
   invalid_date: "Revisa las fechas.",
+  invalid_participation: "Elige si eres propietario o miembro del plan.",
+  invalid_share: "Tu parte tiene que ser mayor que cero y no superar el precio total.",
 };
 
 export const GENERIC_ERROR = "No hemos podido guardar los cambios. Inténtalo de nuevo en un momento.";

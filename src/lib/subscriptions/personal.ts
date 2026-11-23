@@ -63,6 +63,14 @@ export interface PersonalSubscription {
   role: "owner" | "leader" | "member";
   /** Participantes activos (con cuenta o invitados). 1 en una personal. */
   activeMembers: number;
+  /**
+   * "member": plan que paga otra persona (fuera de la app) y del que pagas una
+   * parte fija. El precio guardado es el total; tu gasto es myShareCents.
+   */
+  participation: "owner" | "member";
+  myShareCents: Cents | null;
+  /** Quién paga el plan, si eres miembro. */
+  planOwnerName: string | null;
 }
 
 /**
@@ -70,7 +78,11 @@ export interface PersonalSubscription {
  * los participantes activos: cada uno floor(total / n) y el líder asume los
  * céntimos sobrantes. En una personal, el importe completo.
  */
-export function myShareOf(sub: Pick<PersonalSubscription, "mode" | "role" | "activeMembers">, total: Cents): Cents {
+type ShareFields = Pick<PersonalSubscription, "mode" | "role" | "activeMembers"> &
+  Partial<Pick<PersonalSubscription, "participation" | "myShareCents">>;
+
+export function myShareOf(sub: ShareFields, total: Cents): Cents {
+  if (sub.participation === "member" && sub.myShareCents !== null && sub.myShareCents !== undefined) return sub.myShareCents;
   if (sub.mode !== "shared" || sub.activeMembers <= 1) return total;
   const base = Math.floor(total / sub.activeMembers);
   return sub.role === "member" ? base : total - base * (sub.activeMembers - 1);
@@ -79,6 +91,15 @@ export function myShareOf(sub: Pick<PersonalSubscription, "mode" | "role" | "act
 /** Quien paga al proveedor y anota los pagos: el propietario o el líder. */
 export function paysProvider(sub: Pick<PersonalSubscription, "role">): boolean {
   return sub.role !== "member";
+}
+
+/**
+ * Lo que se paga en cada renovación desde el punto de vista de quien mira:
+ * el precio completo si paga al proveedor; su parte si es miembro.
+ */
+export function payableOn(sub: PersonalSubscription, date: ISODate): Cents {
+  const total = priceOn(sub.prices, date);
+  return paysProvider(sub) && sub.participation !== "member" ? total : myShareOf(sub, total);
 }
 
 /** Cuenta en el gasto y tiene previsiones de renovación. */
@@ -158,7 +179,7 @@ export function forecasts(sub: PersonalSubscription, today: ISODate, until: ISOD
     currency: sub.currency,
     date,
     // El líder ve lo que pagará al proveedor; un miembro, su parte.
-    amount: paysProvider(sub) ? priceOn(sub.prices, date) : myShareOf(sub, priceOn(sub.prices, date)),
+    amount: payableOn(sub, date),
     paid: paid.has(date),
   }));
 }
@@ -188,7 +209,7 @@ export function missingRenewals(sub: PersonalSubscription, today: ISODate): Fore
       categoryId: sub.categoryId,
       currency: sub.currency,
       date,
-      amount: priceOn(sub.prices, date),
+      amount: payableOn(sub, date),
       paid: false,
     }));
 }

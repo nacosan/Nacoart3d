@@ -56,6 +56,9 @@ export function NewSubscriptionForm({
 
   // Compartir.
   const [shared, setShared] = useState(false);
+  // En un plan compartido: lo pagas tú (propietario) o te lo paga otra persona (miembro).
+  const [role, setRole] = useState<"owner" | "member">(v.participation === "member" ? "member" : "owner");
+  const [myShare, setMyShare] = useState(v.myShare ?? "");
   const [maxMembers, setMaxMembers] = useState(v.maxMembers ?? "");
   const [guests, setGuests] = useState<string[]>([]);
   const [invites, setInvites] = useState<string[]>([]);
@@ -103,6 +106,8 @@ export function NewSubscriptionForm({
   const verifiedMax = plan?.maxMembers && plan.maxMembers >= 2 ? plan.maxMembers : null;
   const capacity = verifiedMax ?? (Number(maxMembers) >= 2 ? Number(maxMembers) : null);
   const canShare = custom || (plan !== null && (plan.maxMembers === null ? plan.isFamily : plan.maxMembers >= 2));
+  const asOwner = shared && role === "owner";
+  const asMember = shared && role === "member";
   const used = 1 + guests.length + invites.length;
   const full = capacity !== null && used >= capacity;
 
@@ -128,7 +133,7 @@ export function NewSubscriptionForm({
   }
 
   const cents = parseAmountToCents(amount);
-  const sharePreview = shared && cents !== null && cents > 0 && guests.length > 0 ? Math.floor(cents / (1 + guests.length)) : null;
+  const sharePreview = asOwner && cents !== null && cents > 0 && guests.length > 0 ? Math.floor(cents / (1 + guests.length)) : null;
 
   const filtered = useMemo(() => {
     const q = normalize(query.trim());
@@ -207,10 +212,11 @@ export function NewSubscriptionForm({
     <form action={action} className="flex flex-col gap-6" noValidate>
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <input type="hidden" name="planId" value={plan?.id ?? ""} />
-      {shared ? <input type="hidden" name="shared" value="on" /> : null}
-      {shared ? guests.map((guest, index) => <input key={`g${index}`} type="hidden" name="guests" value={guest} />) : null}
-      {shared ? invites.map((email) => <input key={email} type="hidden" name="invites" value={email} />) : null}
-      {shared && verifiedMax ? <input type="hidden" name="maxMembers" value={verifiedMax} /> : null}
+      <input type="hidden" name="participation" value={asMember ? "member" : "owner"} />
+      {asOwner ? <input type="hidden" name="shared" value="on" /> : null}
+      {asOwner ? guests.map((guest, index) => <input key={`g${index}`} type="hidden" name="guests" value={guest} />) : null}
+      {asOwner ? invites.map((email) => <input key={email} type="hidden" name="invites" value={email} />) : null}
+      {asOwner && verifiedMax ? <input type="hidden" name="maxMembers" value={verifiedMax} /> : null}
 
       <div className="flex items-center justify-between gap-3 rounded-inner bg-raised p-3">
         <span className="flex min-w-0 items-center gap-3">
@@ -320,7 +326,13 @@ export function NewSubscriptionForm({
               label={custom ? "¿Cuánto cuesta cada vez?" : `¿Cuánto cuesta ${period === "monthly" ? "cada mes" : "cada año"}?`}
               name="amount"
               error={e.amount}
-              hint={shared ? "El precio completo del plan. Abajo verás cuánto toca a cada uno." : "Lo que te cobran, con céntimos."}
+              hint={
+                asMember
+                  ? "El precio completo del plan. Abajo indicas cuánto pagas tú."
+                  : shared
+                    ? "El precio completo del plan. Abajo verás cuánto toca a cada uno."
+                    : "Lo que te cobran, con céntimos."
+              }
             >
               {(props) => (
                 <input
@@ -368,16 +380,74 @@ export function NewSubscriptionForm({
                   className="mt-0.5 size-5 accent-primary"
                 />
                 <span>
-                  <span className="block text-body font-semibold">
-                    {custom ? "Es un plan familiar o compartido" : "Lo comparto con otras personas"}
-                  </span>
-                  <span className="block text-small text-muted">
-                    Añade a quien lo usa contigo y te diremos cuánto toca a cada uno.
-                  </span>
+                  <span className="block text-body font-semibold">Es un plan familiar o compartido</span>
+                  <span className="block text-small text-muted">Lo usáis varias personas y os repartís el precio.</span>
                 </span>
               </label>
 
               {shared ? (
+                <fieldset>
+                  <legend className="mb-2 text-small font-semibold">¿Quién paga el plan?</legend>
+                  <div className="grid grid-cols-2 gap-1 rounded-full bg-active p-1">
+                    {(
+                      [
+                        { value: "owner", label: "Yo (propietario)" },
+                        { value: "member", label: "Otra persona (miembro)" },
+                      ] as const
+                    ).map((option) => (
+                      <label
+                        key={option.value}
+                        className="flex min-h-10 cursor-pointer items-center justify-center rounded-full px-3 text-center text-small leading-tight text-muted has-checked:bg-surface has-checked:font-semibold has-checked:text-ink has-focus-visible:outline-2 has-focus-visible:outline-accent"
+                      >
+                        <input
+                          type="radio"
+                          name="roleChoice"
+                          value={option.value}
+                          checked={role === option.value}
+                          onChange={() => setRole(option.value)}
+                          className="sr-only"
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              ) : null}
+
+              {asMember ? (
+                <div className="flex flex-col gap-4">
+                  <Field
+                    label="¿Cuánto pagas tú?"
+                    name="myShare"
+                    error={e.myShare}
+                    hint={`Tu parte del precio total, ${period === "monthly" ? "cada mes" : "cada año"}. Es lo que contará como tu gasto.`}
+                  >
+                    {(props) => (
+                      <input
+                        {...props}
+                        name="myShare"
+                        inputMode="decimal"
+                        required
+                        autoComplete="off"
+                        placeholder={cents && verifiedMax ? centsToInput(Math.floor(cents / verifiedMax)) : "3,50"}
+                        value={myShare}
+                        onChange={(event) => setMyShare(event.target.value)}
+                      />
+                    )}
+                  </Field>
+                  <Field label="¿Quién paga el plan?" name="planOwnerName" error={e.planOwnerName} optional>
+                    {(props) => (
+                      <input {...props} name="planOwnerName" maxLength={60} autoComplete="off" placeholder="Nombre" defaultValue={v.planOwnerName} />
+                    )}
+                  </Field>
+                  <p className="text-small text-muted">
+                    Si esa persona usa la app, es mejor que te invite desde su suscripción: así verás el grupo y tu parte
+                    automáticamente.
+                  </p>
+                </div>
+              ) : null}
+
+              {asOwner ? (
                 <div className="flex flex-col gap-4">
                   {verifiedMax ? (
                     <p className="text-small text-muted">Este plan admite hasta {verifiedMax} personas, contándote a ti.</p>

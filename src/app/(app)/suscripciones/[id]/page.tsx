@@ -91,7 +91,7 @@ export default async function SubscriptionPage(props: PageProps<"/suscripciones/
   ) : null;
   const plan = catalog.flatMap((service) => service.plans).find((item) => item.id === sub.planId) ?? null;
   // Se puede compartir si es personalizada, o si el plan admite más de una persona (o no se sabe).
-  const canShare = !shared && (plan === null || plan.maxMembers === null || plan.maxMembers >= 2);
+  const canShare = !shared && sub.participation !== "member" && (plan === null || plan.maxMembers === null || plan.maxMembers >= 2);
 
   return (
     <>
@@ -184,9 +184,18 @@ function Overview({ sub, today, members }: { sub: PersonalSubscription; today: s
         <Money cents={price} currency={sub.currency} className="text-figure font-bold" />
         <span className="text-body text-muted">
           {sub.billingPeriod === "monthly" ? "al mes" : "al año"}
-          {sub.mode === "shared" ? " en total" : ""}
+          {sub.mode === "shared" || sub.participation === "member" ? " en total" : ""}
         </span>
       </p>
+      {sub.participation === "member" ? (
+        <p className="mt-2 text-body">
+          Tu parte: <Money cents={myShareOf(sub, price)} currency={sub.currency} className="font-semibold" />{" "}
+          <span className="text-muted">
+            {sub.billingPeriod === "monthly" ? "al mes" : "al año"}
+            {sub.planOwnerName ? ` · lo paga ${sub.planOwnerName}` : " · lo paga otra persona"}
+          </span>
+        </p>
+      ) : null}
       {sub.mode === "shared" && members.length > 0 ? (
         <div className="mt-6 rounded-inner bg-raised p-4 sm:p-5">
           <ShareDonut

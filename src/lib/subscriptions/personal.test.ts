@@ -36,6 +36,9 @@ function sub(overrides: Partial<PersonalSubscription> = {}): PersonalSubscriptio
     maxMembers: null,
     role: "owner",
     activeMembers: 1,
+    participation: "owner",
+    myShareCents: null,
+    planOwnerName: null,
     ...overrides,
   };
 }
@@ -184,5 +187,12 @@ describe("suscripciones personales", () => {
     assert.equal(forecasts(member, "2026-11-22", "2026-12-01")[0].amount, 849);
     const leader = sub({ mode: "shared", role: "leader", activeMembers: 2, maxMembers: 2, prices: [{ amountCents: 1699, effectiveFrom: "2026-01-31" }] });
     assert.equal(forecasts(leader, "2026-11-22", "2026-12-01")[0].amount, 1699);
+  });
+
+  test("miembro de un plan que paga otra persona: cuenta su parte, no el total", () => {
+    const member = sub({ participation: "member", myShareCents: 350, prices: [{ amountCents: 2099, effectiveFrom: "2026-01-31" }] });
+    assert.equal(monthlyCost(member, "2026-11-22"), 350);
+    assert.equal(forecasts(member, "2026-11-22", "2026-12-01")[0].amount, 350);
+    assert.equal(missingRenewals(sub({ ...member, renewalAnchor: "2026-10-05", trackingFrom: "2026-10-01" }), "2026-11-22")[0].amount, 350);
   });
 });

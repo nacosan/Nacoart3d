@@ -113,6 +113,7 @@ function SubscriptionCard({ sub, today }: { sub: PersonalSubscription; today: st
             <p className="text-small text-muted">
               {CATEGORIES[sub.categoryId].name}
               {sub.mode === "shared" ? ` · Compartida (${sub.activeMembers})` : ""}
+              {sub.participation === "member" ? " · Eres miembro" : ""}
             </p>
           </div>
           <StatusPill status={sub.status} />
@@ -133,7 +134,7 @@ function SubscriptionCard({ sub, today }: { sub: PersonalSubscription; today: st
           <p className="text-right">
             <Money cents={myShareOf(sub, priceOn(sub.prices, today))} currency={sub.currency} className="text-body font-semibold" />
             <span className="block text-[0.8125rem] text-muted">
-              {sub.mode === "shared" ? "tu parte " : ""}
+              {sub.mode === "shared" || sub.participation === "member" ? "tu parte " : ""}
               {sub.billingPeriod === "monthly" ? "al mes" : "al año"}
             </span>
           </p>

@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/Icon";
 import { getProfile } from "@/lib/data/profile";
 import { requireSession } from "@/lib/data/session";
 import { getSubscription } from "@/lib/data/subscriptions";
+import { centsToInput } from "@/lib/finance/money";
 import { todayIn } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Editar suscripción · NacoArt3D" };
@@ -39,6 +40,9 @@ export default async function EditSubscriptionPage(props: PageProps<"/suscripcio
             paidThrough: sub.paidThroughDate ?? "",
             manageUrl: sub.manageUrl ?? "",
             notes: sub.notes ?? "",
+            participation: sub.participation,
+            myShare: sub.myShareCents ? centsToInput(sub.myShareCents) : "",
+            planOwnerName: sub.planOwnerName ?? "",
           }}
         />
       </section>

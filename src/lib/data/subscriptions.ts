@@ -5,7 +5,7 @@ import type { LedgerRow, PersonalSubscription, SubscriptionStatus } from "@/lib/
 import type { Session } from "./session";
 
 const SELECT = `
-  id, owner_id, mode, plan_id, max_members, name, category_id, currency, billing_period, renewal_anchor, status,
+  id, owner_id, mode, plan_id, max_members, participation, my_share_cents, plan_owner_name, name, category_id, currency, billing_period, renewal_anchor, status,
   cancelled_on, paid_through_date, manage_url, notes, tracking_from,
   subscription_prices ( amount_cents, effective_from ),
   ledger_entries ( id, kind, amount_cents, occurred_on, renewal_date, voids_entry_id, concept ),
@@ -18,6 +18,9 @@ interface SubscriptionRow {
   mode: string;
   plan_id: string | null;
   max_members: number | null;
+  participation: string;
+  my_share_cents: number | string | null;
+  plan_owner_name: string | null;
   subscription_members: { user_id: string | null; role: string; status: string }[] | null;
   name: string;
   category_id: string;
@@ -55,6 +58,9 @@ function toModel(row: SubscriptionRow, viewerId: string): PersonalSubscription {
     maxMembers: row.max_members,
     role: !shared ? "owner" : row.owner_id === viewerId ? "leader" : "member",
     activeMembers: shared ? Math.max(1, active.length) : 1,
+    participation: row.participation === "member" ? "member" : "owner",
+    myShareCents: row.my_share_cents === null ? null : Number(row.my_share_cents),
+    planOwnerName: row.plan_owner_name,
     id: row.id,
     name: row.name,
     categoryId: isCategoryId(row.category_id) ? row.category_id : "otros",

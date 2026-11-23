@@ -20,6 +20,9 @@ export interface EditableSubscription {
   paidThrough: string;
   manageUrl: string;
   notes: string;
+  participation: "owner" | "member";
+  myShare: string;
+  planOwnerName: string;
 }
 
 export function EditSubscriptionForm({ initial, today }: { initial: EditableSubscription; today: string }) {
@@ -61,6 +64,17 @@ export function EditSubscriptionForm({ initial, today }: { initial: EditableSubs
           </Field>
           <Field label="Pagada hasta" name="paidThrough" error={e.paidThrough} optional hint="Último día que sigues teniendo el servicio.">
             {(props) => <input {...props} name="paidThrough" type="date" defaultValue={v.paidThrough} />}
+          </Field>
+        </div>
+      ) : null}
+      <input type="hidden" name="participation" value={initial.participation} />
+      {initial.participation === "member" ? (
+        <div className="grid gap-6 rounded-inner bg-raised p-4 sm:grid-cols-2 sm:p-5">
+          <Field label="¿Cuánto pagas tú?" name="myShare" error={e.myShare} hint="Tu parte del precio total.">
+            {(props) => <input {...props} name="myShare" inputMode="decimal" required defaultValue={v.myShare} />}
+          </Field>
+          <Field label="¿Quién paga el plan?" name="planOwnerName" error={e.planOwnerName} optional>
+            {(props) => <input {...props} name="planOwnerName" maxLength={60} defaultValue={v.planOwnerName} />}
           </Field>
         </div>
       ) : null}

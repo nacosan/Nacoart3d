@@ -30,7 +30,23 @@ function urlError(value: string): string | undefined {
   }
 }
 
-const CREATE_FIELDS = ["name", "category", "currency", "period", "anchor", "status", "amount", "manageUrl", "notes", "planId", "shared", "maxMembers"];
+const CREATE_FIELDS = [
+  "name",
+  "category",
+  "currency",
+  "period",
+  "anchor",
+  "status",
+  "amount",
+  "manageUrl",
+  "notes",
+  "planId",
+  "shared",
+  "maxMembers",
+  "participation",
+  "myShare",
+  "planOwnerName",
+];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function createSubscription(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -55,7 +71,16 @@ export async function createSubscription(_prev: FormState, formData: FormData): 
   if (values.notes.length > 1000) fieldErrors.notes = "Las notas pueden tener hasta 1000 caracteres.";
   const planId = /^[a-z0-9-]{1,80}$/.test(values.planId) ? values.planId : null;
 
-  const shared = values.shared === "on";
+  // Miembro de un plan que paga otra persona: se guarda su parte y no se crea grupo.
+  const asMember = values.participation === "member";
+  let myShare: number | null = null;
+  if (asMember) {
+    myShare = parseAmountToCents(values.myShare);
+    if (myShare === null || myShare <= 0) fieldErrors.myShare = "Escribe cuánto pagas tú, por ejemplo 3,50.";
+    else if (amount !== null && myShare > amount) fieldErrors.myShare = "Tu parte no puede ser mayor que el precio total.";
+    if (values.planOwnerName.length > 60) fieldErrors.planOwnerName = "El nombre puede tener hasta 60 caracteres.";
+  }
+  const shared = values.shared === "on" && !asMember;
   const guests = formData.getAll("guests").map((value) => String(value).trim()).filter(Boolean);
   const invites = formData.getAll("invites").map((value) => String(value).trim().toLowerCase()).filter(Boolean);
   let maxMembers: number | null = null;
@@ -93,12 +118,16 @@ export async function createSubscription(_prev: FormState, formData: FormData): 
     p_max_members: maxMembers,
     p_guests: shared ? guests : [],
     p_invite_emails: shared ? invites : [],
+    p_participation: asMember ? "member" : "owner",
+    p_my_share_cents: asMember ? myShare : null,
+    p_plan_owner_name: asMember ? values.planOwnerName || null : null,
   });
   if (error || typeof data !== "string") {
     const message = userMessage(error, "crear suscripción");
     const memberErrors = ["group_full", "invalid_email", "invite_self", "invalid_guest"];
     if (error && memberErrors.includes(error.message)) return { fieldErrors: { members: message }, values };
     if (error?.message === "invalid_capacity") return { fieldErrors: { maxMembers: message }, values };
+    if (error?.message === "invalid_share") return { fieldErrors: { myShare: message }, values };
     return { tone: "error", message, values };
   }
 
@@ -106,7 +135,7 @@ export async function createSubscription(_prev: FormState, formData: FormData): 
   redirect(`/suscripciones/${data}?creada=1`);
 }
 
-const EDIT_FIELDS = ["name", "category", "status", "cancelledOn", "paidThrough", "manageUrl", "notes"];
+const EDIT_FIELDS = ["name", "category", "status", "cancelledOn", "paidThrough", "manageUrl", "notes", "participation", "myShare", "planOwnerName"];
 
 export async function updateSubscription(id: string, _prev: FormState, formData: FormData): Promise<FormState> {
   const session = await getSession();
@@ -126,12 +155,17 @@ export async function updateSubscription(id: string, _prev: FormState, formData:
   const urlProblem = urlError(values.manageUrl);
   if (urlProblem) fieldErrors.manageUrl = urlProblem;
   if (values.notes.length > 1000) fieldErrors.notes = "Las notas pueden tener hasta 1000 caracteres.";
+  const asMember = values.participation === "member";
+  const myShare = asMember ? parseAmountToCents(values.myShare) : null;
+  if (asMember && (myShare === null || myShare <= 0)) fieldErrors.myShare = "Escribe cuánto pagas tú, por ejemplo 3,50.";
+  if (asMember && values.planOwnerName.length > 60) fieldErrors.planOwnerName = "El nombre puede tener hasta 60 caracteres.";
   if (Object.keys(fieldErrors).length) return { fieldErrors, values };
 
   const { error, count } = await session.supabase
     .from("subscriptions")
     .update(
       {
+        ...(asMember ? { my_share_cents: myShare, plan_owner_name: values.planOwnerName || null } : {}),
         name: values.name,
         category_id: values.category,
         status: values.status,

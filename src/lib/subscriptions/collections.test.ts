@@ -23,6 +23,9 @@ const sub: PersonalSubscription = {
   maxMembers: 6,
   role: "leader",
   activeMembers: 3,
+  participation: "owner",
+  myShareCents: null,
+  planOwnerName: null,
 };
 
 const leader: MembershipRow = { id: "L", role: "leader", joinedOn: "2026-08-05", leftOn: null };
