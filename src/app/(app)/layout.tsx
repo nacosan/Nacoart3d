@@ -1,8 +1,6 @@
-import { cookies } from "next/headers";
 import { signOut } from "@/app/(auth)/actions";
 import { AppNav } from "@/components/app/AppNav";
 import { AppShell } from "@/components/app/AppShell";
-import { SIDEBAR_COOKIE } from "@/components/app/Sidebar";
 import type { NavItem } from "@/components/app/nav";
 import { Icon } from "@/components/ui/Icon";
 import { getProfile, initialsOf } from "@/lib/data/profile";
@@ -31,8 +29,6 @@ function SetupNotice() {
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const session = await requireSession();
   const profile = await getProfile(session);
-  // Plegado por defecto; solo se despliega si la persona lo dejó desplegado ("0").
-  const sidebarCollapsed = (await cookies()).get(SIDEBAR_COOKIE)?.value !== "0";
   return (
     <AppShell
       navigation={<AppNav items={NAV} />}
@@ -51,7 +47,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       }
       screenTitle="ManagSub"
       notice={profile.stored ? null : <SetupNotice />}
-      sidebarCollapsed={sidebarCollapsed}
     >
       {children}
     </AppShell>

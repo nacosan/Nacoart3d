@@ -5,6 +5,7 @@ import { ColumnChart } from "@/components/charts/ColumnChart";
 import { Meter } from "@/components/charts/Meter";
 import { SpendDonut } from "@/components/charts/SpendDonut";
 import { LoadProblem } from "@/components/app/LoadProblem";
+import { Logo } from "@/components/brand/Logo";
 import { ReceivedInvitations } from "@/components/groups/ReceivedInvitations";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -89,6 +90,9 @@ export default async function SummaryPage(props: PageProps<"/">) {
   if (result.status !== "ok") {
     return (
       <>
+        <div className="mb-5">
+          <Logo size={28} />
+        </div>
         <h1 className="text-title font-semibold">{hello}</h1>
         <Notices invitations={invitations} notice={notice} />
         <div className="mt-8">
@@ -117,6 +121,9 @@ export default async function SummaryPage(props: PageProps<"/">) {
   return (
     <>
       <header>
+        <div className="mb-5">
+          <Logo size={28} />
+        </div>
         <h1 className="text-title font-semibold">{hello}</h1>
         <p className="mt-1 max-w-[60ch] text-body text-muted">{headline(upcoming, missing, today)}</p>
       </header>
@@ -153,7 +160,10 @@ function headline(upcoming: Forecast[], missing: Forecast[], today: ISODate): st
 function Welcome({ hello }: { hello: string }) {
   return (
     <>
-      <h1 className="text-title font-semibold">{hello}</h1>
+      <div className="mb-5">
+          <Logo size={28} />
+        </div>
+        <h1 className="text-title font-semibold">{hello}</h1>
       <section className="mt-8 flex flex-col items-start gap-5 rounded-card bg-surface p-7 sm:p-10" aria-labelledby="bienvenida">
         <span aria-hidden="true" className="inline-flex size-14 items-center justify-center rounded-[18px] bg-accent-soft text-accent-ink">
           <Icon name="wallet" size="lg" />
