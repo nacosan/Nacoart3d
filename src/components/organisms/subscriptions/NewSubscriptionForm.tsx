@@ -278,7 +278,7 @@ export function NewSubscriptionForm({
                     Precio de la web oficial a {formatDay(plan.verifiedOn, true)}. Si pagas otra cosa, cámbialo.
                   </>
                 ) : (
-                  <>No hemos podido verificar el precio de este plan. Escribe lo que pagas.</>
+                  <>Precio sin verificar. Indica el tuyo.</>
                 )}
                 {plan.conditions ? <span className="mt-1 block">Condiciones: {plan.conditions}</span> : null}
               </span>
@@ -291,14 +291,10 @@ export function NewSubscriptionForm({
             )}
           </Field>
 
-          <Field
-            label="Ponle un nombre"
-            name="nickname"
-            error={e.nickname}
-            optional
-            hint="Por ejemplo, «Spotify de casa». Será el título y debajo verás qué es."
-          >
-            {(props) => <input {...props} name="nickname" maxLength={60} autoComplete="off" defaultValue={v.nickname} />}
+          <Field label="Nombre personalizado" name="nickname" error={e.nickname} optional>
+            {(props) => (
+              <input {...props} name="nickname" maxLength={60} autoComplete="off" placeholder="Nombre personalizado" defaultValue={v.nickname} />
+            )}
           </Field>
 
           {custom ? (
@@ -334,16 +330,10 @@ export function NewSubscriptionForm({
 
           <div className="grid gap-6 sm:grid-cols-[1fr_9rem]">
             <Field
-              label={custom ? "¿Cuánto cuesta cada vez?" : `¿Cuánto cuesta ${period === "monthly" ? "cada mes" : "cada año"}?`}
+              label="Importe"
               name="amount"
               error={e.amount}
-              hint={
-                asMember
-                  ? "El precio completo del plan. Abajo indicas cuánto pagas tú."
-                  : shared
-                    ? "El precio completo del plan. Abajo verás cuánto toca a cada uno."
-                    : "Lo que te cobran, con céntimos."
-              }
+              hint={shared ? "Precio total del plan" : undefined}
             >
               {(props) => (
                 <input
@@ -370,10 +360,9 @@ export function NewSubscriptionForm({
           </div>
 
           <Field
-            label="¿Qué día te cobran?"
+            label="Fecha de renovación"
             name="anchor"
             error={e.anchor}
-            hint="La fecha de un cobro, pasado o próximo. A partir de ella calculamos las renovaciones."
           >
             {(props) => <input {...props} name="anchor" type="date" required defaultValue={v.anchor ?? today} />}
           </Field>

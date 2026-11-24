@@ -119,7 +119,7 @@ export function PeoplePanel({
 
       {leader ? (
         full ? (
-          <p className="mt-6 text-small text-muted">El plan está completo. Quita a alguien o anula una invitación para hacer sitio.</p>
+          <p className="mt-6 text-small text-muted">Plan completo.</p>
         ) : (
           <div className="mt-6 border-t border-rule pt-5">
             <p className="mb-3 text-small font-semibold">Añadir a alguien</p>

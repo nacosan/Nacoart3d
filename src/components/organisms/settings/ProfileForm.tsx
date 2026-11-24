@@ -81,7 +81,7 @@ export function ProfileForm({ initial, disabled }: { initial: ProfileValues; dis
           name="budget"
           error={e.budget}
           optional
-          hint="Cuánto quieres gastar como mucho al mes en suscripciones. Déjalo vacío si no quieres usarlo."
+          hint="Límite mensual"
         >
           {(props) => <input {...props} name="budget" inputMode="decimal" placeholder="60,00" defaultValue={v.budget} />}
         </Field>

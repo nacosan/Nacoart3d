@@ -7,7 +7,6 @@ import type { GroupMember } from "@/lib/data/groups";
 import { addMonths, formatDay, formatMonthShort } from "@/lib/finance/dates";
 import { centsToInput, formatMoney } from "@/lib/finance/money";
 import {
-  GRACE_DAYS,
   balanceOf,
   installmentsFor,
   type Installment,
@@ -131,7 +130,7 @@ export function CollectionsPanel({
     return (
       <Panel title={leader ? "Cobros" : "Tus pagos"} titleId="cobros">
         <p className="rounded-inner bg-raised p-4 text-small text-muted">
-          {leader ? "Cuando añadas personas al grupo, aquí verás quién te ha pagado su parte." : "Aún no tienes pagos en este grupo."}
+          {leader ? "Sin personas en el grupo." : "Aún no tienes pagos en este grupo."}
         </p>
       </Panel>
     );
@@ -199,11 +198,6 @@ export function CollectionsPanel({
           </ul>
         </section>
       ) : null}
-
-      <p className="mt-3 text-[0.8125rem] text-muted">
-        Un pago cuenta como vencido {GRACE_DAYS} días después de la renovación.
-        {leader ? " Los pagos que declaran los demás no cuentan hasta que los confirmas." : ""}
-      </p>
 
       {payable.length > 0 ? (
         <section aria-labelledby="anotar-cobro" className="mt-5 rounded-inner bg-raised p-4">

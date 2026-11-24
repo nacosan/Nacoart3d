@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { recordMemberPayment } from "@/app/(app)/grupos/actions";
 import { Field } from "@/components/molecules/Field";
 import { FormMessage } from "@/components/molecules/FormMessage";
@@ -53,6 +53,13 @@ export function PaymentRecordForm({
   const [period, setPeriod] = useState(state.values?.renewalDate ?? initialPeriod?.date ?? "");
   const [amount, setAmount] = useState(state.values?.amount ?? initialPeriod?.amount ?? "");
   const [count, setCount] = useState(Number(state.values?.periods ?? "1") || 1);
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+
+  // "¿Es de otro mes?": abre "Cambiar datos" y lleva al selector del mes.
+  function chooseOtherMonth() {
+    if (detailsRef.current) detailsRef.current.open = true;
+    document.getElementById("campo-renewalDate")?.focus();
+  }
   // Importe de una renovación × renovaciones que cubre el pago.
   const scaled = (base: string | undefined, periods: number) => {
     const cents = base ? parseAmountToCents(base) : null;
@@ -97,13 +104,22 @@ export function PaymentRecordForm({
         {coverage ? (
           <p className="mt-1 text-small font-semibold">{coverage.label}</p>
         ) : null}
+        {(member?.periods.length ?? 0) > 1 ? (
+          <button
+            type="button"
+            onClick={chooseOtherMonth}
+            className="mt-2 rounded-full text-[0.8125rem] text-muted underline underline-offset-2 hover:text-ink"
+          >
+            ¿Corresponde a otro mes?
+          </button>
+        ) : null}
       </div>
 
       <Field label="Fecha del pago" name="paidOn" error={e.paidOn}>
         {(props) => <input {...props} name="paidOn" type="date" required max={today} defaultValue={state.values?.paidOn ?? today} />}
       </Field>
 
-      <details open={detailsOpen} className="rounded-inner border border-border">
+      <details ref={detailsRef} open={detailsOpen} className="rounded-inner border border-border">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-inner px-4 py-3 text-small font-semibold [&::-webkit-details-marker]:hidden">
           Cambiar datos
           <Icon name="chevronDown" className="text-muted" />
@@ -156,7 +172,7 @@ export function PaymentRecordForm({
 
       <p className="text-small text-muted">
         {asMember
-          ? "Quien paga el plan lo verá en su Resumen para confirmarlo. Hasta entonces aparecerá como «por confirmar»."
+          ? "Pendiente de confirmación del propietario."
           : "Queda confirmado al momento."}
       </p>
       <SubmitButton icon="check" pendingLabel="Guardando…" className="w-full">

@@ -11,6 +11,7 @@ import { ReceivedInvitations } from "@/components/organisms/groups/ReceivedInvit
 import { ReceivedReminders } from "@/components/organisms/groups/ReceivedReminders";
 import { QuickPay } from "@/components/organisms/subscriptions/QuickPay";
 import { ButtonLink } from "@/components/atoms/Button";
+import { PendingToggle } from "@/components/organisms/app/PendingToggle";
 import { ActionPillLink } from "@/components/molecules/FloatingAction";
 import { Icon } from "@/components/atoms/Icon";
 import { Money } from "@/components/atoms/Money";
@@ -19,6 +20,9 @@ import { Pill } from "@/components/atoms/Pill";
 import { ServiceMark } from "@/components/atoms/ServiceMark";
 import { CATEGORIES } from "@/lib/catalog";
 import {
+  getGroupMembers,
+  getMemberPayments,
+  getMemberships,
   getPendingConfirmations,
   getReceivedInvitations,
   getReceivedReminders,
@@ -43,6 +47,7 @@ import {
   type Forecast,
   type PersonalSubscription,
 } from "@/lib/subscriptions/personal";
+import { installmentsFor } from "@/lib/subscriptions/collections";
 import { relativeDays, todayIn } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Resumen · ManagSub" };
@@ -158,6 +163,17 @@ export default async function SummaryPage(props: PageProps<"/">) {
     .filter((row) => !row.paid)
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.name.localeCompare(b.name, "es")));
   const missing = subs.flatMap((sub) => missingRenewals(sub, today)).sort((a, b) => (a.date < b.date ? 1 : -1));
+  const pending = [
+    ...missing.map((row) => ({ ...row, person: null as string | null, href: `/suscripciones/${row.subscriptionId}?renovacion=${row.date}&abrir=pago` })),
+    ...(await peoplePending(session, subs, today)),
+  ].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+  const headerActions = (
+    <>
+      <ActionPillLink href="/suscripciones/nueva" label="Suscripción" ariaLabel="Añadir suscripción" icon="plus" primary className="shrink-0 whitespace-nowrap" />
+      <ActionPillLink href="/suscripciones" label="Mis suscripciones" icon="list" className="shrink-0 whitespace-nowrap" />
+    </>
+  );
 
   return (
     <>
@@ -166,11 +182,40 @@ export default async function SummaryPage(props: PageProps<"/">) {
           <Logo size={28} />
         </div>
         <h1 className="text-title font-semibold">{hello}</h1>
-        <p className="mt-1 max-w-[60ch] text-body text-muted">{headline(upcoming, missing, today)}</p>
-        <nav aria-label="Acciones" className="mt-5 flex flex-wrap gap-2">
-          <ActionPillLink href="/suscripciones/nueva" label="Añadir suscripción" icon="plus" />
-          <ActionPillLink href="/suscripciones" label="Mis suscripciones" icon="list" />
-        </nav>
+        <p className="mt-1 max-w-[60ch] text-body text-muted">{headline(upcoming, today)}</p>
+        {pending.length > 0 ? (
+          <PendingToggle
+            actions={headerActions}
+            label={pending.length === 1 ? "1 pago por anotar" : `${pending.length} pagos por anotar`}
+            list={
+              <ul className="flex flex-col gap-1 rounded-card bg-surface p-3">
+                {pending.map((row) => (
+                  <li key={row.href}>
+                    <Link
+                      href={row.href}
+                      className="flex items-center gap-3 rounded-inner px-2 py-2 hover:bg-raised"
+                    >
+                      <ServiceMark name={row.serviceName} category={row.categoryId} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-small font-semibold">{row.name}</span>
+                        <span className="block text-[0.8125rem] text-muted">
+                          {row.person ? `${row.person} · ` : ""}
+                          {formatDay(row.date, true)}
+                        </span>
+                      </span>
+                      <Money cents={row.amount} currency={row.currency} className="text-small font-semibold" />
+                      <Icon name="chevron" className="text-muted" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            }
+          />
+        ) : (
+          <nav aria-label="Acciones" className="mt-5 flex gap-2 overflow-x-auto">
+            {headerActions}
+          </nav>
+        )}
       </header>
       <Notices invitations={invitations} notice={notice} confirmations={confirmations} reminders={reminders} />
 
@@ -201,16 +246,50 @@ export default async function SummaryPage(props: PageProps<"/">) {
   );
 }
 
-function headline(upcoming: Forecast[], missing: Forecast[], today: ISODate): string {
+/**
+ * Pagos de personas sin anotar en los planes compartidos que pagas tú: plazos
+ * ya renovados que esa persona no ha pagado del todo.
+ */
+async function peoplePending(session: Awaited<ReturnType<typeof requireSession>>, subs: PersonalSubscription[], today: ISODate) {
+  const owned = subs.filter((sub) => sub.mode === "shared" && sub.role === "leader");
+  const rows = await Promise.all(
+    owned.map(async (sub) => {
+      const [members, memberships, payments] = await Promise.all([
+        getGroupMembers(session, sub.id),
+        getMemberships(session, sub.id),
+        getMemberPayments(session, sub.id),
+      ]);
+      if (payments.status !== "ok") return [];
+      const names = new Map(members.map((member) => [member.memberId, member.displayName]));
+      return memberships
+        .filter((row) => row.role === "member" && names.has(row.id))
+        .flatMap((row) =>
+          installmentsFor(sub, memberships, row, payments.data, today)
+            .filter((item) => item.date <= today && ["pending", "overdue", "partial"].includes(item.status))
+            .map((item) => ({
+              subscriptionId: sub.id,
+              name: titleOf(sub),
+              serviceName: sub.name,
+              categoryId: sub.categoryId,
+              currency: sub.currency,
+              date: item.date,
+              amount: item.due - item.confirmed,
+              person: names.get(row.id) ?? null,
+              href: `/suscripciones/${sub.id}?renovacion=${item.date}&miembro=${row.id}&tipo=persona&abrir=pago`,
+            })),
+        );
+    }),
+  );
+  return rows.flat();
+}
+
+function headline(upcoming: Forecast[], today: ISODate): string {
   const next = upcoming[0];
   const parts: string[] = [];
   if (next) {
     parts.push(`Tu próxima renovación es ${next.name}, ${relativeDays(daysBetween(today, next.date))}.`);
   } else {
     parts.push(`No tienes renovaciones en los próximos ${UPCOMING_DAYS} días.`);
-  }
-  if (missing.length > 0) {
-    parts.push(missing.length === 1 ? "Hay 1 pago pendiente de anotar." : `Hay ${missing.length} pagos pendientes de anotar.`);
   }
   return parts.join(" ");
 }
@@ -263,7 +342,7 @@ function HeroCard({
       <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
           <h2 id="gasto" className="text-body text-muted">
-            Tus suscripciones te cuestan
+            Gasto mensual estimado
           </h2>
           <p className="mt-1 flex flex-wrap items-baseline gap-x-3">
             <Money cents={main.monthly} currency={main.currency} className="text-hero font-bold tracking-tight" />
@@ -302,28 +381,24 @@ function HeroCard({
           <p className="mt-2.5 text-small text-muted">
             {main.monthly <= budget ? (
               <>
-                Llevas el {formatPercent(share)} de tu presupuesto de <Money cents={budget} currency={currency} />. Te quedan{" "}
-                <Money cents={budget - main.monthly} currency={currency} className="font-semibold text-ink" />.
+                Quedan <Money cents={budget - main.monthly} currency={currency} className="font-semibold text-ink" /> de{" "}
+                <Money cents={budget} currency={currency} />
               </>
             ) : (
               <>
-                Te pasas en <Money cents={main.monthly - budget} currency={currency} className="font-semibold text-negative-ink" /> de
-                tu presupuesto de <Money cents={budget} currency={currency} />.
+                <Money cents={main.monthly - budget} currency={currency} className="font-semibold text-negative-ink" /> por encima de{" "}
+                <Money cents={budget} currency={currency} />
               </>
             )}
           </p>
         </div>
       ) : (
-        <p className="mt-6 text-small text-muted">
-          <Link href="/ajustes" className="font-medium text-accent-ink hover:underline">
-            Ponte un presupuesto mensual
-          </Link>{" "}
-          y te diremos cuánto margen te queda.
-        </p>
+        <div className="mt-6">
+          <ButtonLink href="/ajustes" icon="wallet">
+            Fijar presupuesto
+          </ButtonLink>
+        </div>
       )}
-      <p className="mt-4 text-[0.8125rem] text-muted">
-        Es el coste mensual equivalente: un plan anual cuenta su precio entre 12. No es dinero cobrado cada mes.
-      </p>
     </section>
   );
 }
@@ -343,7 +418,7 @@ function UpcomingCard({ rows, today }: { rows: Forecast[]; today: ISODate }) {
   return (
     <Panel title="Lo próximo" titleId="proximo" aside={`Próximos ${UPCOMING_DAYS} días`}>
       {shown.length === 0 ? (
-        <p className="rounded-inner bg-raised p-4 text-small text-muted">Nada a la vista. Disfruta del respiro.</p>
+        <p className="rounded-inner bg-raised p-4 text-small text-muted">Sin renovaciones próximas.</p>
       ) : (
         <ul className="flex flex-col gap-1">
           {shown.map((row) => (
@@ -371,7 +446,6 @@ function UpcomingCard({ rows, today }: { rows: Forecast[]; today: ISODate }) {
           </Link>
         </p>
       ) : null}
-      <p className="mt-4 text-[0.8125rem] text-muted">Son previsiones según lo que contrataste, no pagos.</p>
     </Panel>
   );
 }
@@ -382,7 +456,7 @@ function MissingCard({ rows }: { rows: Forecast[] }) {
       <Panel title="Pagos por anotar" titleId="por-anotar">
         <p className="flex items-center gap-3 rounded-inner bg-positive-soft p-4 text-small text-positive-ink">
           <Icon name="check" size="lg" />
-          Todo anotado. Cada renovación pasada tiene su pago registrado.
+          Todo anotado.
         </p>
       </Panel>
     );
@@ -408,9 +482,6 @@ function MissingCard({ rows }: { rows: Forecast[] }) {
         ))}
       </ul>
       {rows.length > shown.length ? <p className="mt-3 text-small text-muted">Y {rows.length - shown.length} más.</p> : null}
-      <p className="mt-4 text-[0.8125rem] text-muted">
-        No es una deuda: solo falta apuntar que pagaste esas renovaciones.
-      </p>
     </Panel>
   );
 }

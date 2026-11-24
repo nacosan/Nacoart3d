@@ -26,7 +26,7 @@ export function PeriodsField({
 }) {
   if (billingPeriod === "yearly") return <input type="hidden" name="periods" value="1" />;
   return (
-    <Field label="¿Cuántos meses cubre?" name="periods" error={error} hint="Si paga varios meses de golpe, se marcan todos como pagados.">
+    <Field label="¿Cuántos meses cubre?" name="periods" error={error}>
       {(props) => (
         <select {...props} name="periods" value={value} onChange={(event) => onChange(Number(event.target.value))}>
           {OPTIONS.map((option) => (

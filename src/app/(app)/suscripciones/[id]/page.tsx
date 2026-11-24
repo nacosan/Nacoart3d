@@ -201,6 +201,7 @@ export default async function SubscriptionPage(props: PageProps<"/suscripciones/
       content:
         payable.length > 0 ? (
           <PaymentKindSwitch
+            initial={params.tipo === "persona" ? "person" : "service"}
             service={servicePanel}
             person={
               <CollectionForm
@@ -422,10 +423,9 @@ function Overview({ sub, today, members }: { sub: PersonalSubscription; today: s
             </p>
             {coming.length > 1 ? (
               <p className="mt-2 text-small text-muted">
-                Después: {coming.slice(1).map((row) => formatDay(row.date, true)).join(" y ")}.
+                Siguientes: {coming.slice(1).map((row) => formatDay(row.date)).join(" · ")}
               </p>
             ) : null}
-            <p className="mt-2 text-[0.8125rem] text-muted">Es una previsión: solo cuenta como pago cuando lo anotas.</p>
           </>
         ) : sub.status === "cancelled" ? (
           <p className="text-small">
@@ -485,13 +485,6 @@ function PaymentPanel({ sub, today, requested }: { sub: PersonalSubscription; to
           </Pill>
         </p>
       ) : null}
-      <div className="mb-5">
-        <p className="text-small text-muted">
-          {missing.length > 0
-            ? "Hay renovaciones pasadas sin pago anotado. No es una deuda: solo falta apuntarlo."
-            : "Apunta lo que te han cobrado para llevar la cuenta de lo pagado de verdad."}
-        </p>
-      </div>
       <PaymentForm
         id={sub.id}
         idempotencyKey={crypto.randomUUID()}
@@ -590,7 +583,7 @@ function PricePanel({ sub, today }: { sub: PersonalSubscription; today: string }
         <details className="mt-4 rounded-inner bg-raised">
           <summary className="cursor-pointer rounded-inner px-4 py-3 text-small font-semibold">¿Te han cambiado el precio?</summary>
           <div className="px-4 pb-4">
-            <p className="mb-4 text-small text-muted">El nuevo precio aplica desde la fecha que elijas. Lo anterior no cambia.</p>
+            <p className="mb-4 text-small text-muted">Se aplica desde la fecha elegida.</p>
             <PriceForm id={sub.id} today={today} currentAmount={latest ? centsToInput(latest.amountCents) : ""} />
           </div>
         </details>

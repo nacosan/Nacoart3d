@@ -66,7 +66,7 @@ export function InviteForm({
         label="Alguien con cuenta (por email)"
         name="email"
         error={state.fieldErrors?.email}
-        hint="Le llegará una invitación dentro de la app y entrará cuando la acepte."
+        hint="Recibirá una invitación en la app"
       >
         {(props) => (
           <input

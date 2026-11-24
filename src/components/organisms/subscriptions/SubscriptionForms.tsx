@@ -38,14 +38,10 @@ export function EditSubscriptionForm({ initial, today }: { initial: EditableSubs
   return (
     <form action={action} className="flex flex-col gap-6" noValidate>
       <FormMessage state={state} />
-      <Field
-        label="Nombre personalizado"
-        name="nickname"
-        error={e.nickname}
-        optional
-        hint="Por ejemplo, «Spotify de casa». Si lo pones, será el título y debajo verás qué es."
-      >
-        {(props) => <input {...props} name="nickname" maxLength={60} autoComplete="off" defaultValue={v.nickname} />}
+      <Field label="Nombre personalizado" name="nickname" error={e.nickname} optional>
+        {(props) => (
+          <input {...props} name="nickname" maxLength={60} autoComplete="off" placeholder="Nombre personalizado" defaultValue={v.nickname} />
+        )}
       </Field>
       <Field label="Qué es (servicio y plan)" name="name" error={e.name}>
         {(props) => <input {...props} name="name" maxLength={80} required defaultValue={v.name} />}

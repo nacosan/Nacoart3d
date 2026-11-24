@@ -20,10 +20,29 @@ export function FloatingActionLink({ href, label, icon = "plus" }: { href: strin
 export const ACTION_PILL_CLASSES =
   "flex h-10 items-center gap-2 rounded-full border border-border px-4 text-small font-semibold text-ink hover:bg-surface";
 
-export function ActionPillLink({ href, label, icon }: { href: string; label: string; icon: IconName }) {
+/** Variante morada para la acción principal de la pantalla. */
+export const PRIMARY_PILL_CLASSES =
+  "flex h-10 items-center gap-2 rounded-full border border-primary bg-primary px-4 text-small font-semibold text-white hover:bg-primary-hover";
+
+export function ActionPillLink({
+  href,
+  label,
+  icon,
+  primary = false,
+  className = "",
+  ariaLabel,
+}: {
+  href: string;
+  label: string;
+  icon: IconName;
+  primary?: boolean;
+  className?: string;
+  /** Texto completo para lectores de pantalla si la etiqueta visible es corta. */
+  ariaLabel?: string;
+}) {
   return (
-    <Link href={href} className={ACTION_PILL_CLASSES}>
-      <Icon name={icon} className="text-accent-ink" />
+    <Link href={href} aria-label={ariaLabel} className={`${primary ? PRIMARY_PILL_CLASSES : ACTION_PILL_CLASSES} ${className}`}>
+      <Icon name={icon} className={primary ? "" : "text-accent-ink"} />
       {label}
     </Link>
   );

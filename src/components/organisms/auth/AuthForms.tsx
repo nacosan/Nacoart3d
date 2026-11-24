@@ -40,7 +40,7 @@ export function SignUpForm() {
   return (
     <form action={action} className="flex flex-col gap-5" noValidate>
       <FormMessage state={state} />
-      <Field label="¿Cómo te llamas?" name="name" error={state.fieldErrors?.name} hint="Es el nombre que verán las personas con las que compartas algo.">
+      <Field label="¿Cómo te llamas?" name="name" error={state.fieldErrors?.name} hint="Visible para tus grupos">
         {(props) => <input {...props} name="name" autoComplete="given-name" maxLength={60} required defaultValue={state.values?.name} />}
       </Field>
       <Field label="Email" name="email" error={state.fieldErrors?.email}>
