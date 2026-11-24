@@ -4,12 +4,13 @@ import { notFound } from "next/navigation";
 import { deleteSubscription, voidPayment } from "@/app/(app)/suscripciones/actions";
 import { LoadProblem } from "@/components/molecules/LoadProblem";
 import { ShareForm } from "@/components/organisms/groups/GroupForms";
-import { CollectedPaymentsHistory, CollectionsPanel } from "@/components/organisms/groups/CollectionsPanel";
+import { CollectedPaymentsHistory, CollectionForm, CollectionsPanel, payableMembers } from "@/components/organisms/groups/CollectionsPanel";
 import { PeoplePanel } from "@/components/organisms/groups/PeoplePanel";
 import { PendingConfirmations } from "@/components/organisms/groups/PendingConfirmations";
 import { ShareBar, memberColors } from "@/components/organisms/groups/ShareBar";
 import { SubmitButton } from "@/components/molecules/SubmitButton";
 import { PaymentCalendar, type CalendarRow } from "@/components/organisms/subscriptions/PaymentCalendar";
+import { PaymentKindSwitch } from "@/components/organisms/subscriptions/PaymentKindSwitch";
 import { SectionActions, type Section } from "@/components/organisms/subscriptions/SectionActions";
 import { PaymentForm, PriceForm } from "@/components/organisms/subscriptions/SubscriptionForms";
 import { StatusPill } from "@/components/molecules/StatusPill";
@@ -188,13 +189,32 @@ export default async function SubscriptionPage(props: PageProps<"/suscripciones/
     });
   }
   if (!isMember) {
+    // Si es compartida y la pagas tú, el "+" deja elegir entre el pago del servicio y el de una persona.
+    const payable = shared && payments.status === "ok" ? payableMembers(sub, members, memberships, memberPayments, today) : [];
+    const servicePanel = <PaymentPanel sub={sub} today={today} requested={requestedRenewal} />;
     sections.push({
       key: "pago",
       label: "Anotar pago",
       icon: "plus",
       floating: true,
-      title: shared ? "Anotar un pago al servicio" : sub.participation === "member" ? "Anotar un pago" : "Anotar un pago",
-      content: <PaymentPanel sub={sub} today={today} requested={requestedRenewal} />,
+      title: "Anotar un pago",
+      content:
+        payable.length > 0 ? (
+          <PaymentKindSwitch
+            service={servicePanel}
+            person={
+              <CollectionForm
+                sub={sub}
+                payable={payable}
+                today={today}
+                defaultMemberId={typeof params.miembro === "string" ? params.miembro : undefined}
+                defaultRenewal={requestedRenewal || undefined}
+              />
+            }
+          />
+        ) : (
+          servicePanel
+        ),
     });
     sections.push({
       key: "ajustes",

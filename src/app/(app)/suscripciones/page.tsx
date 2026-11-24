@@ -6,6 +6,7 @@ import { ButtonLink } from "@/components/atoms/Button";
 import { FloatingActionLink } from "@/components/molecules/FloatingAction";
 import { Icon } from "@/components/atoms/Icon";
 import { Money } from "@/components/atoms/Money";
+import { Pill } from "@/components/atoms/Pill";
 import { ServiceMark } from "@/components/atoms/ServiceMark";
 import { CATEGORIES } from "@/lib/catalog";
 import { getProfile } from "@/lib/data/profile";
@@ -110,13 +111,22 @@ function SubscriptionCard({ sub, today }: { sub: PersonalSubscription; today: st
           <div className="min-w-0 flex-1">
             <p className="truncate text-body font-semibold">{titleOf(sub)}</p>
             {sub.nickname ? <p className="truncate text-[0.8125rem] text-muted">{sub.name}</p> : null}
-            <p className="text-small text-muted">
-              {CATEGORIES[sub.categoryId].name}
-              {sub.mode === "shared" ? ` · Compartida (${sub.activeMembers})` : ""}
-              {sub.participation === "member" ? " · Eres miembro" : ""}
-            </p>
+            <p className="text-small text-muted">{CATEGORIES[sub.categoryId].name}</p>
           </div>
+        </div>
+        {/* Mismas etiquetas que en el detalle: estado, compartida y propietario. */}
+        <div className="flex flex-wrap gap-1.5">
           <StatusPill status={sub.status} />
+          {sub.mode === "shared" || sub.participation === "member" ? (
+            <Pill tone="accent" icon="users">
+              Compartida
+            </Pill>
+          ) : null}
+          {sub.role === "leader" ? (
+            <Pill tone="warning" icon="crown">
+              Propietario
+            </Pill>
+          ) : null}
         </div>
         <div className="mt-auto flex items-end justify-between gap-3">
           <p className="text-small text-muted">

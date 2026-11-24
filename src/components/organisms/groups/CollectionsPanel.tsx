@@ -4,7 +4,7 @@ import { Icon } from "@/components/atoms/Icon";
 import { Money } from "@/components/atoms/Money";
 import { Panel } from "@/components/molecules/Panel";
 import type { GroupMember } from "@/lib/data/groups";
-import { formatDay, formatMonthShort } from "@/lib/finance/dates";
+import { addMonths, formatDay, formatMonthShort } from "@/lib/finance/dates";
 import { centsToInput, formatMoney } from "@/lib/finance/money";
 import {
   GRACE_DAYS,
@@ -34,6 +34,59 @@ function payableFrom(sub: PersonalSubscription, installments: Installment[]): Pa
       label: `${periodLabel(sub, item.date)} · ${formatMoney(item.due - item.confirmed, sub.currency)}${item.status === "upcoming" ? " (por adelantado)" : ""}`,
       amount: centsToInput(item.due - item.confirmed),
     }));
+}
+
+/**
+ * Personas a las que se puede anotar un cobro (o, si eres miembro, tú). Se
+ * ofrecen también los plazos de los próximos meses, para poder anotar un pago
+ * por adelantado aunque la persona esté al día.
+ */
+export function payableMembers(
+  sub: PersonalSubscription,
+  members: GroupMember[],
+  memberships: MembershipRow[],
+  payments: MemberPaymentRow[],
+  today: string,
+): PayableMember[] {
+  const leader = sub.role === "leader";
+  const names = new Map(members.map((member) => [member.memberId, member]));
+  return memberships
+    .filter((row) => row.role === "member" && names.has(row.id))
+    .filter((row) => (leader ? true : names.get(row.id)?.isMe))
+    .map((row) => ({
+      id: row.id,
+      name: names.get(row.id)?.displayName ?? "Participante anterior",
+      periods: payableFrom(sub, installmentsFor(sub, memberships, row, payments, today, addMonths(today, sub.billingPeriod === "monthly" ? 12 : 24))),
+    }));
+}
+
+/** Formulario para anotar el pago de una persona (o declarar el tuyo si eres miembro). */
+export function CollectionForm({
+  sub,
+  payable,
+  today,
+  defaultMemberId,
+  defaultRenewal,
+}: {
+  sub: PersonalSubscription;
+  payable: PayableMember[];
+  today: string;
+  defaultMemberId?: string;
+  defaultRenewal?: string;
+}) {
+  return (
+    <PaymentRecordForm
+      subscriptionId={sub.id}
+      members={payable}
+      idempotencyKey={crypto.randomUUID()}
+      today={today}
+      asMember={sub.role !== "leader"}
+      billingPeriod={sub.billingPeriod}
+      defaultMemberId={defaultMemberId}
+      defaultRenewal={defaultRenewal}
+      currency={sub.currency}
+    />
+  );
 }
 
 export function CollectionsPanel({
@@ -93,9 +146,7 @@ export function CollectionsPanel({
   );
   const declared = payments.filter((payment) => payment.status === "declared");
   const nameOf = (memberId: string) => names.get(memberId)?.displayName ?? "Participante anterior";
-  const payable: PayableMember[] = rows
-    .filter(({ row }) => names.has(row.id))
-    .map(({ row, installments }) => ({ id: row.id, name: nameOf(row.id), periods: payableFrom(sub, installments) }));
+  const payable = payableMembers(sub, members, memberships, payments, today);
 
   return (
     <div>
@@ -159,17 +210,7 @@ export function CollectionsPanel({
           <h3 id="anotar-cobro" className="mb-3 flex items-center gap-2 text-small font-semibold">
             <Icon name={leader ? "plus" : "send"} /> {leader ? "Anotar un cobro" : "He enviado un pago"}
           </h3>
-          <PaymentRecordForm
-            subscriptionId={sub.id}
-            members={payable}
-            idempotencyKey={crypto.randomUUID()}
-            today={today}
-            asMember={!leader}
-            billingPeriod={sub.billingPeriod}
-            defaultMemberId={defaultMemberId}
-            defaultRenewal={defaultRenewal}
-            currency={sub.currency}
-          />
+          <CollectionForm sub={sub} payable={payable} today={today} defaultMemberId={defaultMemberId} defaultRenewal={defaultRenewal} />
         </section>
       ) : null}
 

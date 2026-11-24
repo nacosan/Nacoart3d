@@ -105,7 +105,8 @@ export function NewSubscriptionForm({
   // Plazas: el máximo verificado del plan manda; si no, el que escribe la persona.
   const verifiedMax = plan?.maxMembers && plan.maxMembers >= 2 ? plan.maxMembers : null;
   const capacity = verifiedMax ?? (Number(maxMembers) >= 2 ? Number(maxMembers) : null);
-  const canShare = custom || (plan !== null && (plan.maxMembers === null ? plan.isFamily : plan.maxMembers >= 2));
+  // Cualquier suscripción se puede compartir; en los planes familiares viene activado.
+  const canShare = custom || plan !== null;
   const asOwner = shared && role === "owner";
   const asMember = shared && role === "member";
   const used = 1 + guests.length + invites.length;
@@ -382,18 +383,26 @@ export function NewSubscriptionForm({
               <h2 id="compartir" className="sr-only">
                 Compartir
               </h2>
-              <label className="flex cursor-pointer items-start gap-3">
-                <input
-                  type="checkbox"
-                  checked={shared}
-                  onChange={(event) => setShared(event.target.checked)}
-                  className="mt-0.5 size-5 accent-primary"
-                />
+              <button
+                type="button"
+                role="switch"
+                aria-checked={shared}
+                onClick={() => setShared(!shared)}
+                className="flex w-full items-center justify-between gap-4 text-left"
+              >
                 <span>
-                  <span className="block text-body font-semibold">Es un plan familiar o compartido</span>
+                  <span className="block text-body font-semibold">La comparto con otras personas</span>
                   <span className="block text-small text-muted">Lo usáis varias personas y os repartís el precio.</span>
                 </span>
-              </label>
+                <span
+                  aria-hidden="true"
+                  className={`inline-flex h-7 w-12 flex-none items-center rounded-full p-0.5 transition-colors duration-150 ${
+                    shared ? "justify-end bg-primary" : "justify-start bg-control"
+                  }`}
+                >
+                  <span className="size-6 rounded-full bg-white shadow" />
+                </span>
+              </button>
 
               {shared ? (
                 <fieldset>
