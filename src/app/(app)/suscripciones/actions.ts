@@ -46,6 +46,7 @@ const CREATE_FIELDS = [
   "participation",
   "myShare",
   "planOwnerName",
+  "nickname",
 ];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -70,6 +71,7 @@ export async function createSubscription(_prev: FormState, formData: FormData): 
   if (urlProblem) fieldErrors.manageUrl = urlProblem;
   if (values.notes.length > 1000) fieldErrors.notes = "Las notas pueden tener hasta 1000 caracteres.";
   const planId = /^[a-z0-9-]{1,80}$/.test(values.planId) ? values.planId : null;
+  if (values.nickname.length > 60) fieldErrors.nickname = "El nombre puede tener hasta 60 caracteres.";
 
   // Miembro de un plan que paga otra persona: se guarda su parte y no se crea grupo.
   const asMember = values.participation === "member";
@@ -131,11 +133,33 @@ export async function createSubscription(_prev: FormState, formData: FormData): 
     return { tone: "error", message, values };
   }
 
+  // El nombre personalizado se guarda aparte (la función de alta no lo recibe).
+  if (values.nickname) {
+    const { error: nicknameError } = await session.supabase
+      .from("subscriptions")
+      .update({ nickname: values.nickname })
+      .eq("id", data)
+      .eq("owner_id", session.userId);
+    if (nicknameError) console.error("[crear suscripción] nombre personalizado:", nicknameError);
+  }
+
   revalidatePath("/", "layout");
   redirect(`/suscripciones/${data}?creada=1`);
 }
 
-const EDIT_FIELDS = ["name", "category", "status", "cancelledOn", "paidThrough", "manageUrl", "notes", "participation", "myShare", "planOwnerName"];
+const EDIT_FIELDS = [
+  "name",
+  "nickname",
+  "category",
+  "status",
+  "cancelledOn",
+  "paidThrough",
+  "manageUrl",
+  "notes",
+  "participation",
+  "myShare",
+  "planOwnerName",
+];
 
 export async function updateSubscription(id: string, _prev: FormState, formData: FormData): Promise<FormState> {
   const session = await getSession();
@@ -145,6 +169,7 @@ export async function updateSubscription(id: string, _prev: FormState, formData:
   const fieldErrors: Record<string, string> = {};
 
   if (values.name.length < 1 || values.name.length > 80) fieldErrors.name = "Escribe el nombre del servicio (hasta 80 caracteres).";
+  if (values.nickname.length > 60) fieldErrors.nickname = "El nombre puede tener hasta 60 caracteres.";
   if (!isCategoryId(values.category)) fieldErrors.category = "Elige una categoría.";
   if (!["active", "trial", "paused", "cancelled"].includes(values.status)) fieldErrors.status = "Elige un estado.";
   const cancelled = values.status === "cancelled";
@@ -167,6 +192,7 @@ export async function updateSubscription(id: string, _prev: FormState, formData:
       {
         ...(asMember ? { my_share_cents: myShare, plan_owner_name: values.planOwnerName || null } : {}),
         name: values.name,
+        nickname: values.nickname || null,
         category_id: values.category,
         status: values.status,
         cancelled_on: cancelledOn,
@@ -225,6 +251,9 @@ export async function registerPayment(id: string, _prev: FormState, formData: Fo
   const renewalDate = values.renewalDate ? isoDate(values.renewalDate) : null;
   if (values.renewalDate && !renewalDate) fieldErrors.renewalDate = "Elige una renovación de la lista.";
   if (values.concept.length > 200) fieldErrors.concept = "El concepto puede tener hasta 200 caracteres.";
+  const periods = Number(str(formData, "periods") || "1");
+  if (!Number.isInteger(periods) || periods < 1 || periods > 24) fieldErrors.periods = "Elige cuántos meses cubre.";
+  if (periods > 1 && !renewalDate) fieldErrors.renewalDate = "Para pagar varios meses, elige desde qué renovación.";
   const key = uuid(str(formData, "idempotencyKey"));
   if (!key) return { tone: "error", message: GENERIC_ERROR, values };
   if (Object.keys(fieldErrors).length) return { fieldErrors, values };
@@ -236,6 +265,7 @@ export async function registerPayment(id: string, _prev: FormState, formData: Fo
     p_renewal_date: renewalDate,
     p_concept: values.concept || null,
     p_idempotency_key: key,
+    p_periods: periods,
   });
   if (error) {
     const message = userMessage(error, "registrar pago");

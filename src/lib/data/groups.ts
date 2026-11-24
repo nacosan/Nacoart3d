@@ -126,7 +126,7 @@ export type PaymentsResult = { status: "ok"; data: MemberPaymentRow[] } | { stat
 export async function getMemberPayments(session: Session, subscriptionId: string): Promise<PaymentsResult> {
   const { data, error } = await session.supabase
     .from("member_payments")
-    .select("id, member_id, renewal_date, amount_cents, paid_on, status, note")
+    .select("id, member_id, renewal_date, periods, amount_cents, paid_on, status, note")
     .eq("subscription_id", subscriptionId)
     .order("created_at")
     .returns<
@@ -134,6 +134,7 @@ export async function getMemberPayments(session: Session, subscriptionId: string
         id: string;
         member_id: string;
         renewal_date: string;
+        periods: number | null;
         amount_cents: number | string;
         paid_on: string;
         status: string;
@@ -152,10 +153,133 @@ export async function getMemberPayments(session: Session, subscriptionId: string
       id: row.id,
       memberId: row.member_id,
       renewalDate: row.renewal_date,
+      periods: row.periods ?? 1,
       amountCents: Number(row.amount_cents),
       paidOn: row.paid_on,
       status: statuses.find((status) => status === row.status) ?? "declared",
       note: row.note,
     })),
   };
+}
+
+export interface PendingConfirmation {
+  id: string;
+  subscriptionId: string;
+  subscriptionTitle: string;
+  memberName: string;
+  renewalDate: string;
+  periods: number;
+  amountCents: number;
+  currency: Currency;
+  billingPeriod: "monthly" | "yearly";
+  paidOn: string;
+  note: string | null;
+}
+
+/**
+ * Pagos que te han declarado en los planes que pagas tú y esperan que los
+ * confirmes. Por RLS solo se leen los de tus grupos (y los tuyos como miembro,
+ * que aquí se descartan al filtrar por propietario).
+ */
+export async function getPendingConfirmations(session: Session, subscriptionId?: string): Promise<PendingConfirmation[]> {
+  let query = session.supabase
+    .from("member_payments")
+    .select(
+      "id, subscription_id, member_id, renewal_date, periods, amount_cents, paid_on, note, subscriptions!inner ( name, nickname, currency, billing_period, owner_id )",
+    )
+    .eq("status", "declared")
+    .eq("subscriptions.owner_id", session.userId)
+    .order("created_at");
+  if (subscriptionId) query = query.eq("subscription_id", subscriptionId);
+  const { data, error } = await query.returns<
+    {
+      id: string;
+      subscription_id: string;
+      member_id: string;
+      renewal_date: string;
+      periods: number | null;
+      amount_cents: number | string;
+      paid_on: string;
+      note: string | null;
+      subscriptions: { name: string; nickname: string | null; currency: string; billing_period: string; owner_id: string };
+    }[]
+  >();
+  if (error) {
+    if (!isMissingSchema(error)) console.error("[cobros] por confirmar:", error);
+    return [];
+  }
+  const rows = data ?? [];
+  // Nombres de quien declaró, grupo a grupo (normalmente son pocos).
+  const names = new Map<string, string>();
+  for (const id of new Set(rows.map((row) => row.subscription_id))) {
+    for (const member of await getGroupMembers(session, id)) names.set(member.memberId, member.displayName);
+  }
+  return rows.map((row) => ({
+    id: row.id,
+    subscriptionId: row.subscription_id,
+    subscriptionTitle: row.subscriptions.nickname?.trim() || row.subscriptions.name,
+    memberName: names.get(row.member_id) ?? "Alguien",
+    renewalDate: row.renewal_date,
+    periods: row.periods ?? 1,
+    amountCents: Number(row.amount_cents),
+    currency: isCurrency(row.subscriptions.currency) ? row.subscriptions.currency : "EUR",
+    billingPeriod: row.subscriptions.billing_period === "yearly" ? "yearly" : "monthly",
+    paidOn: row.paid_on,
+    note: row.note,
+  }));
+}
+
+export interface ReceivedReminder {
+  id: string;
+  subscriptionId: string;
+  subscriptionTitle: string;
+  memberId: string;
+  leaderName: string;
+  renewalDate: string;
+  amountCents: number;
+  currency: Currency;
+  billingPeriod: "monthly" | "yearly";
+}
+
+/** Recordatorios de pago que te han enviado y no has cerrado. */
+export async function getReceivedReminders(session: Session): Promise<ReceivedReminder[]> {
+  const { data, error } = await session.supabase
+    .from("payment_reminders")
+    .select(
+      "id, subscription_id, member_id, renewal_date, amount_cents, subscription_members!inner ( user_id ), subscriptions!inner ( name, nickname, currency, billing_period )",
+    )
+    .is("dismissed_at", null)
+    .eq("subscription_members.user_id", session.userId)
+    .order("created_at", { ascending: false })
+    .returns<
+      {
+        id: string;
+        subscription_id: string;
+        member_id: string;
+        renewal_date: string;
+        amount_cents: number | string;
+        subscriptions: { name: string; nickname: string | null; currency: string; billing_period: string };
+      }[]
+    >();
+  if (error) {
+    if (!isMissingSchema(error)) console.error("[recordatorios] recibidos:", error);
+    return [];
+  }
+  const rows = data ?? [];
+  const leaders = new Map<string, string>();
+  for (const id of new Set(rows.map((row) => row.subscription_id))) {
+    const leader = (await getGroupMembers(session, id)).find((member) => member.role === "leader");
+    if (leader) leaders.set(id, leader.displayName);
+  }
+  return rows.map((row) => ({
+    id: row.id,
+    subscriptionId: row.subscription_id,
+    subscriptionTitle: row.subscriptions.nickname?.trim() || row.subscriptions.name,
+    memberId: row.member_id,
+    leaderName: leaders.get(row.subscription_id) ?? "Quien paga el plan",
+    renewalDate: row.renewal_date,
+    amountCents: Number(row.amount_cents),
+    currency: isCurrency(row.subscriptions.currency) ? row.subscriptions.currency : "EUR",
+    billingPeriod: row.subscriptions.billing_period === "yearly" ? "yearly" : "monthly",
+  }));
 }

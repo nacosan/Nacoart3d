@@ -5,10 +5,10 @@ import type { LedgerRow, PersonalSubscription, SubscriptionStatus } from "@/lib/
 import type { Session } from "./session";
 
 const SELECT = `
-  id, owner_id, mode, plan_id, max_members, participation, my_share_cents, plan_owner_name, name, category_id, currency, billing_period, renewal_anchor, status,
+  id, owner_id, mode, plan_id, max_members, participation, my_share_cents, plan_owner_name, nickname, name, category_id, currency, billing_period, renewal_anchor, status,
   cancelled_on, paid_through_date, manage_url, notes, tracking_from,
   subscription_prices ( amount_cents, effective_from ),
-  ledger_entries ( id, kind, amount_cents, occurred_on, renewal_date, voids_entry_id, concept ),
+  ledger_entries ( id, kind, amount_cents, occurred_on, renewal_date, voids_entry_id, concept, periods ),
   subscription_members ( user_id, role, status )
 `;
 
@@ -21,6 +21,7 @@ interface SubscriptionRow {
   participation: string;
   my_share_cents: number | string | null;
   plan_owner_name: string | null;
+  nickname: string | null;
   subscription_members: { user_id: string | null; role: string; status: string }[] | null;
   name: string;
   category_id: string;
@@ -43,6 +44,7 @@ interface SubscriptionRow {
         renewal_date: string | null;
         voids_entry_id: string | null;
         concept: string | null;
+        periods?: number | null;
       }[]
     | null;
 }
@@ -63,6 +65,7 @@ function toModel(row: SubscriptionRow, viewerId: string): PersonalSubscription {
     planOwnerName: row.plan_owner_name,
     id: row.id,
     name: row.name,
+    nickname: row.nickname,
     categoryId: isCategoryId(row.category_id) ? row.category_id : "otros",
     currency: isCurrency(row.currency) ? row.currency : "EUR",
     billingPeriod: row.billing_period === "yearly" ? "yearly" : "monthly",
@@ -87,6 +90,7 @@ function toModel(row: SubscriptionRow, viewerId: string): PersonalSubscription {
         renewalDate: entry.renewal_date,
         voidsEntryId: entry.voids_entry_id,
         concept: entry.concept,
+        periods: entry.periods ?? 1,
       }),
     ),
   };

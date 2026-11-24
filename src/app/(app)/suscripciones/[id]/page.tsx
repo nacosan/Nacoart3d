@@ -6,8 +6,11 @@ import { LoadProblem } from "@/components/app/LoadProblem";
 import { ShareForm } from "@/components/groups/GroupForms";
 import { CollectionsPanel } from "@/components/groups/CollectionsPanel";
 import { PeoplePanel } from "@/components/groups/PeoplePanel";
-import { ShareDonut } from "@/components/groups/ShareDonut";
+import { PendingConfirmations } from "@/components/groups/PendingConfirmations";
+import { ShareDonut, memberColors } from "@/components/groups/ShareDonut";
 import { SubmitButton } from "@/components/forms/SubmitButton";
+import { PaymentCalendar, type CalendarRow } from "@/components/subscriptions/PaymentCalendar";
+import { SectionActions, type Section } from "@/components/subscriptions/SectionActions";
 import { PaymentForm, PriceForm } from "@/components/subscriptions/SubscriptionForms";
 import { StatusPill } from "@/components/subscriptions/StatusPill";
 import { ButtonLink } from "@/components/ui/Button";
@@ -18,12 +21,20 @@ import { Pill } from "@/components/ui/Pill";
 import { ServiceMark } from "@/components/ui/ServiceMark";
 import { CATEGORIES } from "@/lib/catalog";
 import { getCatalog } from "@/lib/data/catalog";
-import { getGroupInvites, getGroupMembers, getMemberPayments, getMemberships, type GroupMember } from "@/lib/data/groups";
-import { getProfile } from "@/lib/data/profile";
+import {
+  getGroupInvites,
+  getGroupMembers,
+  getMemberPayments,
+  getMemberships,
+  getPendingConfirmations,
+  type GroupMember,
+} from "@/lib/data/groups";
+import { getProfile, initialsOf } from "@/lib/data/profile";
 import { requireSession } from "@/lib/data/session";
 import { getSubscription } from "@/lib/data/subscriptions";
-import { addMonths, daysBetween, formatDay } from "@/lib/finance/dates";
+import { addDays, addMonths, daysBetween, formatDay, formatMonthLong, formatMonthShort, parseISODate } from "@/lib/finance/dates";
 import { centsToInput, formatMoney, monthlyEquivalent } from "@/lib/finance/money";
+import { calendarSegments, installmentsFor, monthIndex, ownInstallments } from "@/lib/subscriptions/collections";
 import {
   PERIOD_LABEL,
   forecasts,
@@ -34,6 +45,7 @@ import {
   myShareOf,
   nextRenewal,
   priceOn,
+  titleOf,
   totalPaid,
   type PersonalSubscription,
 } from "@/lib/subscriptions/personal";
@@ -79,19 +91,130 @@ export default async function SubscriptionPage(props: PageProps<"/suscripciones/
     shared ? getMemberships(session, sub.id) : Promise.resolve([]),
     shared ? getMemberPayments(session, sub.id) : Promise.resolve({ status: "ok" as const, data: [] }),
   ]);
-  const collectionsPanel = shared ? (
-    <CollectionsPanel
-      sub={sub}
-      members={members}
-      memberships={memberships}
-      payments={payments.status === "ok" ? payments.data : []}
-      today={today}
-      setupMissing={payments.status === "setup"}
-    />
-  ) : null;
+  const confirmations = sub.role === "leader" ? await getPendingConfirmations(session, sub.id) : [];
+  const memberPayments = payments.status === "ok" ? payments.data : [];
   const plan = catalog.flatMap((service) => service.plans).find((item) => item.id === sub.planId) ?? null;
   // Se puede compartir si es personalizada, o si el plan admite más de una persona (o no se sabe).
   const canShare = !shared && sub.participation !== "member" && (plan === null || plan.maxMembers === null || plan.maxMembers >= 2);
+
+  // Calendario: año pedido en la URL (?anio=2027) o el actual.
+  const currentYear = parseISODate(today).year;
+  const requestedYear = Number(params.anio);
+  const year = Number.isInteger(requestedYear) && requestedYear >= 2000 && requestedYear <= 2100 ? requestedYear : currentYear;
+  // Meses del año elegido; en el año actual, si los dos meses siguientes pasan
+  // de diciembre, se añaden los del año siguiente.
+  const now = parseISODate(today);
+  const nowIndex = monthIndex(now.year, now.month);
+  const rangeStart = monthIndex(year, 1);
+  const rangeLength = year === currentYear ? Math.max(12, nowIndex + 2 - rangeStart + 1) : 12;
+  const calendarMonths = Array.from({ length: rangeLength }, (_, offset) => ({
+    year: Math.floor((rangeStart + offset) / 12),
+    month: ((rangeStart + offset) % 12) + 1,
+  }));
+  const last = calendarMonths[calendarMonths.length - 1];
+  const rangeEndDate = addDays(addMonths(`${String(last.year).padStart(4, "0")}-${String(last.month).padStart(2, "0")}-01`, 1), -1);
+  // Columna del mes actual: la vista se coloca para que se vea él y, como mucho, los dos siguientes.
+  const focusCol = year === currentYear ? nowIndex - rangeStart + 1 : null;
+  const colors = memberColors(members);
+  const names = new Map(members.map((member) => [member.memberId, member]));
+  const calendarRows: CalendarRow[] = shared
+    ? memberships
+        .filter((row) => row.role === "member" && (!isMember || names.get(row.id)?.isMe))
+        .map((row) => {
+          const member = names.get(row.id);
+          const installments = installmentsFor(sub, memberships, row, memberPayments, today, rangeEndDate);
+          return {
+            key: row.id,
+            name: member?.isMe ? "Tú" : (member?.displayName ?? "Participante anterior"),
+            initials: initialsOf(member?.displayName ?? "?"),
+            hue: colors.get(row.id) ?? "verde",
+            isGuest: member?.isGuest ?? false,
+            // El líder anota cobros de quien sigue en el grupo; un miembro declara los suyos.
+            payAction: member ? ("cobros" as const) : null,
+            segments: calendarSegments(installments, rangeStart, rangeLength, sub.billingPeriod),
+          };
+        })
+        .filter((row) => row.segments.length > 0 || names.has(row.key))
+    : [
+        {
+          key: "yo",
+          name: "Tú",
+          initials: initialsOf(profile.displayName),
+          hue: profile.avatarHue,
+          isGuest: false,
+          payAction: "pago" as const,
+          segments: calendarSegments(ownInstallments(sub, today, rangeEndDate), rangeStart, rangeLength, sub.billingPeriod),
+        },
+      ];
+  const calendarHelp = shared
+    ? isMember
+      ? "Tus pagos a quien paga el plan, mes a mes."
+      : "Quién te ha pagado su parte cada mes."
+    : sub.participation === "member"
+      ? "Lo que has pagado a quien paga el plan, mes a mes."
+      : "Los pagos que has anotado, mes a mes.";
+
+  const sections: Section[] = [];
+  if (shared) {
+    sections.push({
+      key: "personas",
+      label: "Personas",
+      icon: "users",
+      title: "Personas",
+      size: "lg",
+      content: <PeoplePanel sub={sub} members={members} invites={invites} bare />,
+    });
+    sections.push({
+      key: "cobros",
+      label: isMember ? "Mis pagos" : "Cobros",
+      icon: "wallet",
+      title: isMember ? "Mis pagos" : "Cobros",
+      size: "lg",
+      content: (
+        <CollectionsPanel
+          sub={sub}
+          members={members}
+          memberships={memberships}
+          payments={memberPayments}
+          today={today}
+          setupMissing={payments.status === "setup"}
+          defaultMemberId={typeof params.miembro === "string" ? params.miembro : undefined}
+          defaultRenewal={requestedRenewal || undefined}
+        />
+      ),
+    });
+  }
+  if (!isMember) {
+    sections.push({
+      key: "pago",
+      label: "Anotar pago",
+      icon: "plus",
+      floating: true,
+      title: shared ? "Anotar un pago al servicio" : sub.participation === "member" ? "Anotar un pago" : "Anotar un pago",
+      content: (
+        <div className="flex flex-col gap-6">
+          <PaymentPanel sub={sub} today={today} requested={requestedRenewal} />
+          <History sub={sub} />
+        </div>
+      ),
+    });
+    sections.push({
+      key: "ajustes",
+      label: "Ajustes",
+      icon: "settings",
+      title: "Ajustes de la suscripción",
+      content: (
+        <div className="flex flex-col gap-5">
+          <ButtonLink href={`/suscripciones/${sub.id}/editar`} icon="pencil">
+            Editar datos
+          </ButtonLink>
+          {canShare ? <ShareCard sub={sub} verifiedMax={plan?.maxMembers && plan.maxMembers >= 2 ? plan.maxMembers : null} /> : null}
+          <PricePanel sub={sub} today={today} />
+          <DangerZone sub={sub} />
+        </div>
+      ),
+    });
+  }
 
   return (
     <>
@@ -99,28 +222,24 @@ export default async function SubscriptionPage(props: PageProps<"/suscripciones/
         <Icon name="back" /> Suscripciones
       </Link>
 
-      <header className="mt-4 flex flex-wrap items-start justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-4">
-          <ServiceMark name={sub.name} category={sub.categoryId} size="lg" />
-          <div className="min-w-0">
-            <h1 className="text-title font-semibold break-words">{sub.name}</h1>
-            <p className="mt-1 flex flex-wrap items-center gap-2 text-small text-muted">
-              <StatusPill status={sub.status} />
-              {shared ? (
-                <Pill tone="accent" icon="users">
-                  {isMember ? "Compartida contigo" : "Compartida"}
-                </Pill>
-              ) : null}
-              {CATEGORIES[sub.categoryId].name} · {PERIOD_LABEL[sub.billingPeriod]}
-            </p>
-          </div>
+      <header className="mt-4 flex min-w-0 items-center gap-4">
+        <ServiceMark name={sub.name} category={sub.categoryId} size="lg" />
+        <div className="min-w-0">
+          <h1 className="text-title font-semibold break-words">{titleOf(sub)}</h1>
+          {sub.nickname ? <p className="text-small text-muted">{sub.name}</p> : null}
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-small text-muted">
+            <StatusPill status={sub.status} />
+            {shared ? (
+              <Pill tone="accent" icon="users">
+                {isMember ? "Compartida contigo" : "Compartida"}
+              </Pill>
+            ) : null}
+            {CATEGORIES[sub.categoryId].name} · {PERIOD_LABEL[sub.billingPeriod]}
+          </p>
         </div>
-        {isMember ? null : (
-          <ButtonLink href={`/suscripciones/${sub.id}/editar`} icon="pencil">
-            Editar
-          </ButtonLink>
-        )}
       </header>
+
+      <SectionActions sections={sections} />
 
       {notice ? (
         <p
@@ -133,40 +252,47 @@ export default async function SubscriptionPage(props: PageProps<"/suscripciones/
         </p>
       ) : null}
 
-      {isMember ? (
-        <>
-          <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <Overview sub={sub} today={today} members={members} />
-            {collectionsPanel}
+      {confirmations.length > 0 ? (
+        <div className="mt-6">
+          <PendingConfirmations items={confirmations} from="suscripcion" showSubscription={false} />
+        </div>
+      ) : null}
+
+      <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
+        <Overview sub={sub} today={today} members={members} />
+        <section aria-labelledby="calendario" className="min-w-0 rounded-card bg-surface p-6 sm:p-8">
+          <div className="mb-4">
+            <h2 id="calendario" className="text-section font-semibold">
+              Calendario de pagos
+            </h2>
+            <p className="text-small text-muted">{calendarHelp}</p>
           </div>
-          <div className="mt-6">
-            <PeoplePanel sub={sub} members={members} invites={[]} />
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="mt-8 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <Overview sub={sub} today={today} members={members} />
-            <div className="flex flex-col gap-6">
-              {canShare ? <ShareCard sub={sub} verifiedMax={plan?.maxMembers && plan.maxMembers >= 2 ? plan.maxMembers : null} /> : null}
-              <History sub={sub} />
-            </div>
-          </div>
-          {shared ? (
-            <div className="mt-6">
-              <PeoplePanel sub={sub} members={members} invites={invites} />
-            </div>
-          ) : null}
-          {collectionsPanel ? <div className="mt-6">{collectionsPanel}</div> : null}
-          <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <PaymentPanel sub={sub} today={today} requested={requestedRenewal} />
-            <div className="flex flex-col gap-6">
-              <PricePanel sub={sub} today={today} />
-              <DangerZone sub={sub} />
-            </div>
-          </div>
-        </>
-      )}
+          {payments.status === "setup" ? (
+            <p className="rounded-inner bg-warning-soft px-4 py-3 text-small text-warning-ink">
+              Falta aplicar la migración de cobros en Supabase para ver el calendario.
+            </p>
+          ) : calendarRows.length === 0 ? (
+            <p className="rounded-inner bg-raised p-4 text-small text-muted">
+              Cuando añadas personas al grupo, aquí verás quién te ha pagado cada mes.
+            </p>
+          ) : (
+            <PaymentCalendar
+              key={year}
+              rows={calendarRows}
+              months={calendarMonths}
+              year={year}
+              currentYear={currentYear}
+              focusCol={focusCol}
+              basePath={`/suscripciones/${sub.id}`}
+              currency={sub.currency}
+              subscriptionId={sub.id}
+              subscriptionTitle={titleOf(sub)}
+              reminders={sub.role === "leader"}
+            />
+          )}
+        </section>
+      </div>
+
     </>
   );
 }
@@ -176,7 +302,7 @@ function Overview({ sub, today, members }: { sub: PersonalSubscription; today: s
   const next = nextRenewal(sub, today);
   const coming = forecasts(sub, today, addMonths(today, sub.billingPeriod === "monthly" ? 3 : 24)).slice(0, 3);
   return (
-    <section aria-labelledby="resumen" className="rounded-card bg-surface p-6 sm:p-8">
+    <section aria-labelledby="resumen" className="min-w-0 rounded-card bg-surface p-6 sm:p-8">
       <h2 id="resumen" className="sr-only">
         Resumen
       </h2>
@@ -197,7 +323,7 @@ function Overview({ sub, today, members }: { sub: PersonalSubscription; today: s
         </p>
       ) : null}
       {sub.mode === "shared" && members.length > 0 ? (
-        <div className="mt-6 rounded-inner bg-raised p-4 sm:p-5">
+        <div className="mt-6">
           <ShareDonut
             members={members}
             total={price}
@@ -214,7 +340,7 @@ function Overview({ sub, today, members }: { sub: PersonalSubscription; today: s
         </p>
       ) : null}
 
-      <div className="mt-6 rounded-inner bg-raised p-4 sm:p-5">
+      <div className="mt-6 border-t border-rule pt-5">
         {next ? (
           <>
             <p className="text-small text-muted">Próxima renovación</p>
@@ -259,20 +385,34 @@ function Overview({ sub, today, members }: { sub: PersonalSubscription; today: s
 
 function PaymentPanel({ sub, today, requested }: { sub: PersonalSubscription; today: string; requested: string }) {
   const missing = missingRenewals(sub, today);
-  const todayRenewal = forecasts(sub, today, today).filter((row) => !row.paid);
-  const options = [...todayRenewal, ...missing].map((row) => ({
-    value: row.date,
-    label: `${formatDay(row.date, true)} · ${formatMoney(row.amount, sub.currency)}${row.date === today ? " (hoy)" : ""}`,
-    amount: centsToInput(row.amount),
-  }));
+  // Las mismas renovaciones que el calendario, sin pagar del todo (también la próxima, para pagar por adelantado).
+  const options = ownInstallments(sub, today)
+    .filter((row) => row.status !== "paid" && row.due > row.confirmed)
+    .map((row) => ({
+      value: row.date,
+      label: `${formatDay(row.date, true)} · ${formatMoney(row.due - row.confirmed, sub.currency)}${
+        row.date === today ? " (hoy)" : row.date > today ? " (por adelantado)" : ""
+      }`,
+      amount: centsToInput(row.due - row.confirmed),
+      title: sub.billingPeriod === "monthly" ? formatMonthLong(row.date) : `el año desde el ${formatDay(row.date, true)}`,
+    }));
+  // Meses pendientes de anotar, entre paréntesis en el aviso: "2 por anotar (sep, oct)".
+  const missingMonths = missing
+    .slice(0, 4)
+    .map((row) => formatMonthShort(row.date).split(" ")[0])
+    .join(", ");
   const defaultRenewal = options.some((row) => row.value === requested) ? requested : (options[0]?.value ?? "");
   return (
-    <Panel
-      title="Anotar un pago"
-      titleId="registrar-pago"
-      aside={missing.length > 0 ? <Pill tone="warning" icon="info">{missing.length === 1 ? "1 por anotar" : `${missing.length} por anotar`}</Pill> : null}
-    >
-      <div className="-mt-2 mb-5">
+    <Panel bare>
+      {missing.length > 0 ? (
+        <p className="mb-3">
+          <Pill tone="warning" icon="info">
+            {missing.length === 1 ? "1 por anotar" : `${missing.length} por anotar`} ({missingMonths}
+            {missing.length > 4 ? "…" : ""})
+          </Pill>
+        </p>
+      ) : null}
+      <div className="mb-5">
         <p className="text-small text-muted">
           {missing.length > 0
             ? "Hay renovaciones pasadas sin pago anotado. No es una deuda: solo falta apuntarlo."
@@ -286,6 +426,8 @@ function PaymentPanel({ sub, today, requested }: { sub: PersonalSubscription; to
         defaultAmount={centsToInput(priceOn(sub.prices, today))}
         renewals={options}
         defaultRenewal={defaultRenewal}
+        billingPeriod={sub.billingPeriod}
+        currency={sub.currency}
       />
     </Panel>
   );
@@ -297,7 +439,17 @@ function History({ sub }: { sub: PersonalSubscription }) {
     .sort((a, b) => (a.occurredOn < b.occurredOn ? 1 : a.occurredOn > b.occurredOn ? -1 : 0));
   const total = totalPaid(sub.entries);
   return (
-    <Panel title="Historial de pagos" titleId="historial" aside={payments.length > 0 ? <>Total: <Money cents={total} currency={sub.currency} className="font-semibold text-ink" /></> : null}>
+    <section aria-labelledby="historial" className="border-t border-rule pt-5">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h3 id="historial" className="text-body font-semibold">
+          Historial de pagos
+        </h3>
+        {payments.length > 0 ? (
+          <p className="text-small text-muted">
+            Total: <Money cents={total} currency={sub.currency} className="font-semibold text-ink" />
+          </p>
+        ) : null}
+      </div>
       {payments.length === 0 ? (
         <p className="rounded-inner bg-raised p-4 text-small text-muted">Todavía no has anotado ningún pago.</p>
       ) : (
@@ -309,7 +461,11 @@ function History({ sub }: { sub: PersonalSubscription }) {
                 <div className="min-w-0 flex-1">
                   <p className={`text-small font-semibold ${voided ? "text-muted line-through" : ""}`}>{formatDay(entry.occurredOn, true)}</p>
                   <p className="text-[0.8125rem] text-muted">
-                    {entry.renewalDate ? `Renovación del ${formatDay(entry.renewalDate, true)}` : "Pago suelto"}
+                    {entry.renewalDate
+                      ? (entry.periods ?? 1) > 1
+                        ? `${entry.periods === 12 ? "Todo el año" : `${entry.periods} meses`} desde el ${formatDay(entry.renewalDate, true)}`
+                        : `Renovación del ${formatDay(entry.renewalDate, true)}`
+                      : "Pago suelto"}
                     {entry.concept ? ` · ${entry.concept}` : ""}
                   </p>
                 </div>
@@ -337,7 +493,7 @@ function History({ sub }: { sub: PersonalSubscription }) {
           })}
         </ul>
       )}
-    </Panel>
+    </section>
   );
 }
 
@@ -345,7 +501,10 @@ function PricePanel({ sub, today }: { sub: PersonalSubscription; today: string }
   const prices = [...sub.prices].sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? 1 : -1));
   const latest = latestPrice(sub.prices);
   return (
-    <Panel title="Precio" titleId="precio">
+    <section aria-labelledby="precio">
+      <h3 id="precio" className="mb-2 text-body font-semibold">
+        Precio
+      </h3>
       <ul className="flex flex-col">
         {prices.map((price) => (
           <li key={price.effectiveFrom} className="flex items-center justify-between gap-3 border-b border-rule py-2.5 text-small last:border-b-0">
@@ -363,14 +522,14 @@ function PricePanel({ sub, today }: { sub: PersonalSubscription; today: string }
           </div>
         </details>
       ) : null}
-    </Panel>
+    </section>
   );
 }
 
 function ShareCard({ sub, verifiedMax }: { sub: PersonalSubscription; verifiedMax: number | null }) {
   return (
-    <details className="group rounded-card bg-surface">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-card p-6 [&::-webkit-details-marker]:hidden">
+    <details className="group rounded-inner border border-border">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-inner p-4 [&::-webkit-details-marker]:hidden">
         <span className="flex items-center gap-3">
           <Icon name="users" size="lg" className="text-accent-ink" />
           <span>
@@ -380,7 +539,7 @@ function ShareCard({ sub, verifiedMax }: { sub: PersonalSubscription; verifiedMa
         </span>
         <Icon name="chevron" className="transition-transform duration-150 group-open:rotate-90" />
       </summary>
-      <div className="px-6 pb-6">
+      <div className="px-4 pb-4">
         <ShareForm subscriptionId={sub.id} verifiedMax={verifiedMax} />
       </div>
     </details>
@@ -398,7 +557,7 @@ function DangerZone({ sub }: { sub: PersonalSubscription }) {
           ya no la pagas, quizá prefieras marcarla como cancelada.
         </p>
         <SubmitButton variant="danger" icon="trash" pendingLabel="Borrando…">
-          Borrar «{sub.name}»
+          Borrar «{titleOf(sub)}»
         </SubmitButton>
       </form>
     </details>

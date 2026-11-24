@@ -284,10 +284,20 @@ export function NewSubscriptionForm({
             </p>
           ) : null}
 
-          <Field label={custom ? "¿Qué servicio es?" : "Nombre"} name="name" error={e.name}>
+          <Field label={custom ? "¿Qué servicio es?" : "Qué es (servicio y plan)"} name="name" error={e.name}>
             {(props) => (
               <input {...props} name="name" maxLength={80} required autoComplete="off" value={name} onChange={(event) => setName(event.target.value)} />
             )}
+          </Field>
+
+          <Field
+            label="Ponle un nombre"
+            name="nickname"
+            error={e.nickname}
+            optional
+            hint="Por ejemplo, «Spotify de casa». Será el título y debajo verás qué es."
+          >
+            {(props) => <input {...props} name="nickname" maxLength={60} autoComplete="off" defaultValue={v.nickname} />}
           </Field>
 
           {custom ? (

@@ -19,6 +19,7 @@ function sub(overrides: Partial<PersonalSubscription> = {}): PersonalSubscriptio
   return {
     id: "s1",
     name: "Servicio",
+    nickname: null,
     categoryId: "video",
     currency: "EUR",
     billingPeriod: "monthly",

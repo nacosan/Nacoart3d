@@ -3,17 +3,21 @@
 import { useActionState, useState } from "react";
 import { changePrice, registerPayment, updateSubscription } from "@/app/(app)/suscripciones/actions";
 import { Field } from "@/components/forms/Field";
+import { PeriodsField } from "@/components/forms/PeriodsField";
 import { FormMessage } from "@/components/forms/FormMessage";
 import { EMPTY_FORM_STATE } from "@/components/forms/FormState";
 import { SubmitButton } from "@/components/forms/SubmitButton";
 import { ButtonLink } from "@/components/ui/Button";
+import { Icon } from "@/components/ui/Icon";
 import { CATEGORIES, CATEGORY_IDS } from "@/lib/catalog";
+import { centsToInput, formatMoney, parseAmountToCents, type Currency } from "@/lib/finance/money";
 
 const CATEGORY_OPTIONS = CATEGORY_IDS.map((id) => ({ value: id, label: CATEGORIES[id].name }));
 
 export interface EditableSubscription {
   id: string;
   name: string;
+  nickname: string;
   category: string;
   status: string;
   cancelledOn: string;
@@ -33,7 +37,16 @@ export function EditSubscriptionForm({ initial, today }: { initial: EditableSubs
   return (
     <form action={action} className="flex flex-col gap-6" noValidate>
       <FormMessage state={state} />
-      <Field label="Nombre" name="name" error={e.name}>
+      <Field
+        label="Nombre personalizado"
+        name="nickname"
+        error={e.nickname}
+        optional
+        hint="Por ejemplo, «Spotify de casa». Si lo pones, será el título y debajo verás qué es."
+      >
+        {(props) => <input {...props} name="nickname" maxLength={60} autoComplete="off" defaultValue={v.nickname} />}
+      </Field>
+      <Field label="Qué es (servicio y plan)" name="name" error={e.name}>
         {(props) => <input {...props} name="name" maxLength={80} required defaultValue={v.name} />}
       </Field>
       <Field label="Categoría" name="category" error={e.category}>
@@ -127,64 +140,104 @@ export function PaymentForm({
   defaultAmount,
   renewals,
   defaultRenewal,
+  billingPeriod,
+  currency,
 }: {
   id: string;
   idempotencyKey: string;
   today: string;
   defaultAmount: string;
-  renewals: { value: string; label: string; amount: string }[];
+  /** Renovaciones sin pagar; title es el nombre del mes ("noviembre de 2026"). */
+  renewals: { value: string; label: string; amount: string; title: string }[];
   defaultRenewal: string;
+  billingPeriod: "monthly" | "yearly";
+  currency: Currency;
 }) {
   const [state, action] = useActionState(registerPayment.bind(null, id), EMPTY_FORM_STATE);
   const v = state.values ?? {};
   const e = state.fieldErrors ?? {};
   const [renewal, setRenewal] = useState(v.renewalDate ?? defaultRenewal);
   const [amount, setAmount] = useState(v.amount ?? (renewals.find((row) => row.value === defaultRenewal)?.amount || defaultAmount));
+  const [periods, setPeriods] = useState(Number(v.periods ?? "1") || 1);
+  // Importe de una renovación (la elegida o el precio actual) × renovaciones que cubre.
+  const baseFor = (date: string) => renewals.find((row) => row.value === date)?.amount || defaultAmount;
+  const scaled = (base: string, count: number) => {
+    const cents = parseAmountToCents(base);
+    return cents === null ? base : centsToInput(cents * count);
+  };
+  const chosen = renewals.find((row) => row.value === renewal);
+  const cents = parseAmountToCents(amount);
+  // Si hay un error en algo de "Cambiar datos", se abre para verlo.
+  const detailsOpen = Boolean(e.renewalDate || e.periods || e.amount || e.concept);
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       <input type="hidden" name="idempotencyKey" value={idempotencyKey} />
       <FormMessage state={state} />
-      {renewals.length > 0 ? (
-        <Field label="¿Qué renovación pagaste?" name="renewalDate" error={e.renewalDate} optional>
-          {(props) => (
-            <select
-              {...props}
-              name="renewalDate"
-              value={renewal}
-              onChange={(event) => {
-                setRenewal(event.target.value);
-                const match = renewals.find((row) => row.value === event.target.value);
-                if (match) setAmount(match.amount);
-              }}
-            >
-              <option value="">Ninguna en concreto</option>
-              {renewals.map((row) => (
-                <option key={row.value} value={row.value}>
-                  {row.label}
-                </option>
-              ))}
-            </select>
-          )}
-        </Field>
-      ) : null}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Importe pagado" name="amount" error={e.amount}>
-          {(props) => (
-            <input {...props} name="amount" inputMode="decimal" required value={amount} onChange={(event) => setAmount(event.target.value)} />
-          )}
-        </Field>
-        <Field label="Fecha del pago" name="occurredOn" error={e.occurredOn}>
-          {(props) => <input {...props} name="occurredOn" type="date" required max={today} defaultValue={v.occurredOn ?? today} />}
-        </Field>
+
+      <div className="rounded-inner bg-raised p-4">
+        <p className="text-small text-muted">Vas a confirmar el pago de</p>
+        <p className="text-body font-semibold">
+          {chosen ? chosen.title : "un pago suelto"}
+          {periods > 1 ? ` y ${periods - 1} ${periods - 1 === 1 ? "mes más" : "meses más"}` : ""}
+        </p>
+        <p className="text-figure font-bold tabular-nums">{cents === null ? amount || "—" : formatMoney(cents, currency)}</p>
       </div>
-      <Field label="Concepto" name="concept" error={e.concept} optional>
-        {(props) => <input {...props} name="concept" maxLength={200} defaultValue={v.concept} />}
+
+      <Field label="Fecha del pago" name="occurredOn" error={e.occurredOn}>
+        {(props) => <input {...props} name="occurredOn" type="date" required max={today} defaultValue={v.occurredOn ?? today} />}
       </Field>
-      <div>
-        <SubmitButton icon="check" pendingLabel="Anotando…">
-          Anotar pago
-        </SubmitButton>
-      </div>
+
+      <details open={detailsOpen} className="group rounded-inner border border-border">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-inner px-4 py-3 text-small font-semibold [&::-webkit-details-marker]:hidden">
+          Cambiar datos
+          <Icon name="chevronDown" className="text-muted" />
+        </summary>
+        <div className="flex flex-col gap-4 px-4 pb-4">
+          {renewals.length > 0 ? (
+            <Field label="¿Qué renovación es?" name="renewalDate" error={e.renewalDate} optional>
+              {(props) => (
+                <select
+                  {...props}
+                  name="renewalDate"
+                  value={renewal}
+                  onChange={(event) => {
+                    setRenewal(event.target.value);
+                    setAmount(scaled(baseFor(event.target.value), periods));
+                  }}
+                >
+                  <option value="">Ninguna en concreto</option>
+                  {renewals.map((row) => (
+                    <option key={row.value} value={row.value}>
+                      {row.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </Field>
+          ) : null}
+          <PeriodsField
+            billingPeriod={billingPeriod}
+            value={periods}
+            error={e.periods}
+            onChange={(count) => {
+              setPeriods(count);
+              setAmount(scaled(baseFor(renewal), count));
+            }}
+          />
+          <Field label="Importe pagado" name="amount" error={e.amount}>
+            {(props) => (
+              <input {...props} name="amount" inputMode="decimal" required value={amount} onChange={(event) => setAmount(event.target.value)} />
+            )}
+          </Field>
+          <Field label="Concepto" name="concept" error={e.concept} optional>
+            {(props) => <input {...props} name="concept" maxLength={200} defaultValue={v.concept} />}
+          </Field>
+        </div>
+      </details>
+
+      <SubmitButton icon="check" pendingLabel="Guardando…" className="w-full">
+        Confirmar pago
+      </SubmitButton>
     </form>
   );
 }

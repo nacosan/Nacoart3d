@@ -47,17 +47,19 @@ export function PeoplePanel({
   sub,
   members,
   invites,
+  bare = false,
 }: {
   sub: PersonalSubscription;
   members: GroupMember[];
   invites: PendingInvite[];
+  bare?: boolean;
 }) {
   const leader = sub.role === "leader";
   const colors = memberColors(members);
   const full = sub.maxMembers !== null && members.length + invites.length >= sub.maxMembers;
 
   return (
-    <Panel title="Personas" titleId="personas">
+    <Panel title="Personas" titleId="personas" bare={bare}>
       <Seats members={members} invites={invites} max={sub.maxMembers} />
 
       <ul className="mt-5 flex flex-col">

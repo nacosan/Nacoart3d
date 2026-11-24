@@ -6,7 +6,10 @@ import { Meter } from "@/components/charts/Meter";
 import { SpendDonut } from "@/components/charts/SpendDonut";
 import { LoadProblem } from "@/components/app/LoadProblem";
 import { Logo } from "@/components/brand/Logo";
+import { PendingConfirmations } from "@/components/groups/PendingConfirmations";
 import { ReceivedInvitations } from "@/components/groups/ReceivedInvitations";
+import { ReceivedReminders } from "@/components/groups/ReceivedReminders";
+import { QuickPay } from "@/components/subscriptions/QuickPay";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { Money } from "@/components/ui/Money";
@@ -14,7 +17,14 @@ import { Panel } from "@/components/ui/Panel";
 import { Pill } from "@/components/ui/Pill";
 import { ServiceMark } from "@/components/ui/ServiceMark";
 import { CATEGORIES } from "@/lib/catalog";
-import { getReceivedInvitations, type ReceivedInvitation } from "@/lib/data/groups";
+import {
+  getPendingConfirmations,
+  getReceivedInvitations,
+  getReceivedReminders,
+  type PendingConfirmation,
+  type ReceivedInvitation,
+  type ReceivedReminder,
+} from "@/lib/data/groups";
 import { firstName, getProfile } from "@/lib/data/profile";
 import { requireSession } from "@/lib/data/session";
 import { listSubscriptions } from "@/lib/data/subscriptions";
@@ -26,6 +36,7 @@ import {
   isRunning,
   missingRenewals,
   monthlyCost,
+  titleOf,
   paidByMonth,
   totalsByCurrency,
   type Forecast,
@@ -53,9 +64,22 @@ const INVITATION_NOTICES: Record<string, { tone: "success" | "error"; text: stri
   rechazada: { tone: "success", text: "Invitación rechazada." },
   llena: { tone: "error", text: "Ese grupo ya está completo. Pide a quien te invitó que haga sitio." },
   error: { tone: "error", text: "No hemos podido responder a la invitación. Puede que haya caducado o la hayan anulado." },
+  // Pagos confirmados o rechazados desde el Resumen (?pago=...).
+  confirmado: { tone: "success", text: "Pago confirmado." },
+  rechazado: { tone: "success", text: "Pago rechazado. Sigue pendiente." },
 };
 
-function Notices({ invitations, notice }: { invitations: ReceivedInvitation[]; notice: string | undefined }) {
+function Notices({
+  invitations,
+  notice,
+  confirmations,
+  reminders,
+}: {
+  invitations: ReceivedInvitation[];
+  notice: string | undefined;
+  confirmations: PendingConfirmation[];
+  reminders: ReceivedReminder[];
+}) {
   const message = notice ? INVITATION_NOTICES[notice] : undefined;
   return (
     <>
@@ -69,6 +93,16 @@ function Notices({ invitations, notice }: { invitations: ReceivedInvitation[]; n
           <Icon name={message.tone === "success" ? "check" : "alert"} /> {message.text}
         </p>
       ) : null}
+      {reminders.length > 0 ? (
+        <div className="mt-6">
+          <ReceivedReminders items={reminders} />
+        </div>
+      ) : null}
+      {confirmations.length > 0 ? (
+        <div className="mt-6">
+          <PendingConfirmations items={confirmations} from="resumen" showSubscription />
+        </div>
+      ) : null}
       {invitations.length > 0 ? (
         <div className="mt-6">
           <ReceivedInvitations invitations={invitations} />
@@ -80,11 +114,17 @@ function Notices({ invitations, notice }: { invitations: ReceivedInvitation[]; n
 
 export default async function SummaryPage(props: PageProps<"/">) {
   const params = await props.searchParams;
-  const notice = typeof params.invitacion === "string" ? params.invitacion : undefined;
+  const notice =
+    typeof params.invitacion === "string" ? params.invitacion : typeof params.pago === "string" ? params.pago : undefined;
   const session = await requireSession();
   const profile = await getProfile(session);
   const today = todayIn(profile.timezone);
-  const [result, invitations] = await Promise.all([listSubscriptions(session), getReceivedInvitations(session)]);
+  const [result, invitations, confirmations, reminders] = await Promise.all([
+    listSubscriptions(session),
+    getReceivedInvitations(session),
+    getPendingConfirmations(session),
+    getReceivedReminders(session),
+  ]);
   const hello = `${greeting(profile.timezone)}, ${firstName(profile.displayName)}`;
 
   if (result.status !== "ok") {
@@ -94,7 +134,7 @@ export default async function SummaryPage(props: PageProps<"/">) {
           <Logo size={28} />
         </div>
         <h1 className="text-title font-semibold">{hello}</h1>
-        <Notices invitations={invitations} notice={notice} />
+        <Notices invitations={invitations} notice={notice} confirmations={confirmations} reminders={reminders} />
         <div className="mt-8">
           <LoadProblem status={result.status} retryHref="/" />
         </div>
@@ -107,7 +147,7 @@ export default async function SummaryPage(props: PageProps<"/">) {
     return (
       <>
         <Welcome hello={hello} />
-        <Notices invitations={invitations} notice={notice} />
+        <Notices invitations={invitations} notice={notice} confirmations={confirmations} reminders={reminders} />
       </>
     );
   }
@@ -127,7 +167,20 @@ export default async function SummaryPage(props: PageProps<"/">) {
         <h1 className="text-title font-semibold">{hello}</h1>
         <p className="mt-1 max-w-[60ch] text-body text-muted">{headline(upcoming, missing, today)}</p>
       </header>
-      <Notices invitations={invitations} notice={notice} />
+      <Notices invitations={invitations} notice={notice} confirmations={confirmations} reminders={reminders} />
+
+      <QuickPay
+        options={subs
+          .filter((sub) => isRunning(sub))
+          .map((sub) => ({
+            id: sub.id,
+            title: titleOf(sub),
+            serviceName: sub.name,
+            categoryId: sub.categoryId,
+            // Miembro de un grupo: declara su pago; el resto, anota el suyo.
+            href: `/suscripciones/${sub.id}?abrir=${sub.role === "member" ? "cobros" : "pago"}`,
+          }))}
+      />
 
       <div className="mt-8 flex flex-col gap-6">
         <HeroCard subs={subs} today={today} currency={profile.currency} budget={profile.monthlyBudgetCents} />
@@ -231,7 +284,7 @@ function HeroCard({
             currency={main.currency}
             items={subs
               .filter((sub) => isRunning(sub) && sub.currency === main.currency)
-              .map((sub) => ({ id: sub.id, name: sub.name, categoryId: sub.categoryId, amount: monthlyCost(sub, today) }))}
+              .map((sub) => ({ id: sub.id, name: titleOf(sub), categoryId: sub.categoryId, amount: monthlyCost(sub, today) }))}
           />
         </div>
       </div>
@@ -342,7 +395,7 @@ function MissingCard({ rows }: { rows: Forecast[] }) {
               href={`/suscripciones/${row.subscriptionId}?renovacion=${row.date}#registrar-pago`}
               className="-mx-2 flex items-center gap-3 rounded-inner px-2 py-2 hover:bg-raised"
             >
-              <ServiceMark name={row.name} category={row.categoryId} />
+              <ServiceMark name={row.serviceName} category={row.categoryId} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-small font-semibold">{row.name}</span>
                 <span className="block text-[0.8125rem] text-muted">Renovó el {formatDay(row.date, true)}</span>

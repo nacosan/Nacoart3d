@@ -11,7 +11,7 @@ import { getProfile } from "@/lib/data/profile";
 import { requireSession } from "@/lib/data/session";
 import { listSubscriptions } from "@/lib/data/subscriptions";
 import { daysBetween, formatDay } from "@/lib/finance/dates";
-import { isRunning, missingRenewals, myShareOf, nextRenewal, priceOn, type PersonalSubscription } from "@/lib/subscriptions/personal";
+import { isRunning, missingRenewals, myShareOf, nextRenewal, priceOn, titleOf, type PersonalSubscription } from "@/lib/subscriptions/personal";
 import { relativeDays, todayIn } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Suscripciones · ManagSub" };
@@ -109,7 +109,8 @@ function SubscriptionCard({ sub, today }: { sub: PersonalSubscription; today: st
         <div className="flex items-start gap-3">
           <ServiceMark name={sub.name} category={sub.categoryId} size="lg" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-body font-semibold">{sub.name}</p>
+            <p className="truncate text-body font-semibold">{titleOf(sub)}</p>
+            {sub.nickname ? <p className="truncate text-[0.8125rem] text-muted">{sub.name}</p> : null}
             <p className="text-small text-muted">
               {CATEGORIES[sub.categoryId].name}
               {sub.mode === "shared" ? ` · Compartida (${sub.activeMembers})` : ""}

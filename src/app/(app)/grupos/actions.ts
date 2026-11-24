@@ -131,6 +131,8 @@ export async function recordMemberPayment(subscriptionId: string, _prev: FormSta
   const paidOn = isoDate(values.paidOn);
   if (!paidOn) fieldErrors.paidOn = "Elige la fecha del pago.";
   if (values.note.length > 200) fieldErrors.note = "La nota puede tener hasta 200 caracteres.";
+  const periods = Number(str(formData, "periods") || "1");
+  if (!Number.isInteger(periods) || periods < 1 || periods > 24) fieldErrors.periods = "Elige cuántos meses cubre.";
   const key = uuid(str(formData, "idempotencyKey"));
   if (!uuid(subscriptionId) || !key) return { tone: "error", message: GENERIC_ERROR, values };
   if (Object.keys(fieldErrors).length) return { fieldErrors, values };
@@ -142,18 +144,50 @@ export async function recordMemberPayment(subscriptionId: string, _prev: FormSta
     p_paid_on: paidOn,
     p_note: values.note || null,
     p_idempotency_key: key,
+    p_periods: periods,
   });
   if (error) return { tone: "error", message: userMessage(error, "anotar cobro"), values };
   revalidatePath("/", "layout");
   redirect(`/suscripciones/${subscriptionId}?cobro=1#cobros`);
 }
 
-export async function reviewMemberPayment(subscriptionId: string, paymentId: string, accept: boolean): Promise<void> {
-  await simple("review_member_payment", { p_payment_id: paymentId }, "revisar cobro", `/suscripciones/${subscriptionId}`, { p_accept: accept });
-  redirect(`/suscripciones/${subscriptionId}?${accept ? "confirmado" : "rechazado"}=1#cobros`);
+/** Confirma o rechaza un pago declarado. Desde el Resumen ("/") vuelve allí; si no, a la suscripción. */
+export async function reviewMemberPayment(subscriptionId: string, paymentId: string, accept: boolean, from: "resumen" | "suscripcion"): Promise<void> {
+  const back = from === "resumen" ? "/" : `/suscripciones/${subscriptionId}`;
+  await simple("review_member_payment", { p_payment_id: paymentId }, "revisar cobro", back, { p_accept: accept });
+  redirect(from === "resumen" ? `/?pago=${accept ? "confirmado" : "rechazado"}` : `${back}?${accept ? "confirmado" : "rechazado"}=1`);
 }
 
 export async function voidMemberPayment(subscriptionId: string, paymentId: string): Promise<void> {
   await simple("void_member_payment", { p_payment_id: paymentId }, "anular cobro", `/suscripciones/${subscriptionId}`);
   redirect(`/suscripciones/${subscriptionId}?cobroAnulado=1#cobros`);
+}
+
+/** Recordatorio de pago a un miembro con cuenta (le aparece en su Resumen). */
+export async function sendPaymentReminder(
+  subscriptionId: string,
+  memberId: string,
+  renewalDate: string,
+  amountCents: number,
+): Promise<{ ok: boolean }> {
+  const session = await getSession();
+  if (!session || !uuid(subscriptionId) || !uuid(memberId) || !isoDate(renewalDate) || !Number.isSafeInteger(amountCents)) {
+    return { ok: false };
+  }
+  const { error } = await session.supabase.rpc("send_payment_reminder", {
+    p_member_id: memberId,
+    p_renewal_date: renewalDate,
+    p_amount_cents: amountCents,
+  });
+  if (error) {
+    userMessage(error, "recordatorio");
+    return { ok: false };
+  }
+  revalidatePath(`/suscripciones/${subscriptionId}`);
+  return { ok: true };
+}
+
+export async function dismissPaymentReminder(reminderId: string): Promise<void> {
+  await simple("dismiss_payment_reminder", { p_reminder_id: reminderId }, "cerrar recordatorio", "/");
+  redirect("/");
 }

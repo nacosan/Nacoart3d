@@ -20,6 +20,8 @@ const DB_MESSAGES: Record<string, string> = {
   invitation_unavailable: "Esa invitación ya no está disponible.",
   invalid_date: "Revisa las fechas.",
   invalid_participation: "Elige si eres propietario o miembro del plan.",
+  guest_member: "Esa persona no tiene cuenta: no le puede llegar un aviso en la app.",
+  invalid_periods: "Elige cuántos meses cubre el pago.",
   invalid_share: "Tu parte tiene que ser mayor que cero y no superar el precio total.",
 };
 

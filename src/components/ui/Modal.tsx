@@ -10,10 +10,13 @@ export function Modal({
   dialogRef,
   title,
   children,
+  size = "sm",
 }: {
   dialogRef: React.RefObject<HTMLDialogElement | null>;
   title: string;
   children: React.ReactNode;
+  /** sm: formularios cortos; lg: tablas y apartados largos. */
+  size?: "sm" | "lg";
 }) {
   return (
     <dialog
@@ -30,7 +33,7 @@ export function Modal({
       className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none overflow-y-auto bg-transparent p-0 text-ink backdrop:bg-black/40"
     >
       <div data-modal-backdrop="true" className="flex min-h-full w-full items-center justify-center p-4">
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-card bg-surface p-6 shadow-xl">
+        <div className={`flex w-full flex-col gap-4 rounded-card bg-surface p-6 shadow-xl ${size === "lg" ? "max-w-2xl" : "max-w-sm"}`}>
           <div className="flex items-start justify-between gap-4">
             <h2 className="text-body font-semibold">{title}</h2>
             <button

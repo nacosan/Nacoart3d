@@ -8,6 +8,7 @@ import { getProfile } from "@/lib/data/profile";
 import { requireSession } from "@/lib/data/session";
 import { getSubscription } from "@/lib/data/subscriptions";
 import { centsToInput } from "@/lib/finance/money";
+import { titleOf } from "@/lib/subscriptions/personal";
 import { todayIn } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Editar suscripción · ManagSub" };
@@ -25,7 +26,7 @@ export default async function EditSubscriptionPage(props: PageProps<"/suscripcio
   return (
     <div className="mx-auto max-w-2xl">
       <Link href={`/suscripciones/${sub.id}`} className="inline-flex items-center gap-1 rounded-full text-small text-muted hover:text-ink">
-        <Icon name="back" /> {sub.name}
+        <Icon name="back" /> {titleOf(sub)}
       </Link>
       <h1 className="mt-3 text-title font-semibold">Editar suscripción</h1>
       <section className="mt-8 rounded-card bg-surface p-6 sm:p-9">
@@ -34,6 +35,7 @@ export default async function EditSubscriptionPage(props: PageProps<"/suscripcio
           initial={{
             id: sub.id,
             name: sub.name,
+            nickname: sub.nickname ?? "",
             category: sub.categoryId,
             status: sub.status,
             cancelledOn: sub.cancelledOn ?? "",

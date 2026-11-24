@@ -3,7 +3,16 @@ import { publicUrl } from "@/lib/redirects";
 import { updateSession, withSupabaseCookies } from "@/utils/supabase/proxy";
 
 /** Rutas que no exigen sesión. */
-const PUBLIC_PREFIXES = ["/acceso", "/registro", "/recuperar", "/auth/", "/prototipo"];
+const PUBLIC_PREFIXES = [
+  "/acceso",
+  "/registro",
+  "/recuperar",
+  "/auth/",
+  "/prototipo",
+  // Iconos de la app generados por Next.js (el navegador los pide sin sesión).
+  "/icon1",
+  "/apple-icon",
+];
 /** Con sesión no tiene sentido verlas: se vuelve al resumen. */
 const GUEST_ONLY = ["/acceso", "/registro"];
 

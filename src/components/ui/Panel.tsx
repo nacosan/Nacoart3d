@@ -9,6 +9,7 @@ export function Panel({
   children,
   className = "",
   as: Tag = "section",
+  bare = false,
 }: {
   title?: React.ReactNode;
   titleId?: string;
@@ -16,7 +17,10 @@ export function Panel({
   children: React.ReactNode;
   className?: string;
   as?: "section" | "div" | "article";
+  /** Sin tarjeta ni título: para usarlo dentro de una ventana que ya tiene el suyo. */
+  bare?: boolean;
 }) {
+  if (bare) return <div className={className}>{children}</div>;
   return (
     <Tag
       aria-labelledby={title && titleId ? titleId : undefined}

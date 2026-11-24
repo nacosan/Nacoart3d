@@ -38,11 +38,16 @@ export interface LedgerRow {
   renewalDate: ISODate | null;
   voidsEntryId: string | null;
   concept: string | null;
+  /** Renovaciones seguidas que cubre el pago (1 si no se indica). */
+  periods?: number;
 }
 
 export interface PersonalSubscription {
   id: string;
+  /** Lo que es de verdad (servicio y plan). Sirve también para el logotipo. */
   name: string;
+  /** Nombre personalizado opcional; si existe, es el título que se muestra. */
+  nickname: string | null;
   categoryId: CategoryId;
   currency: Currency;
   billingPeriod: BillingPeriod;
@@ -102,6 +107,11 @@ export function payableOn(sub: PersonalSubscription, date: ISODate): Cents {
   return paysProvider(sub) && sub.participation !== "member" ? total : myShareOf(sub, total);
 }
 
+/** Título que se muestra: el nombre personalizado o, si no hay, el del servicio. */
+export function titleOf(sub: Pick<PersonalSubscription, "name" | "nickname">): string {
+  return sub.nickname?.trim() || sub.name;
+}
+
 /** Cuenta en el gasto y tiene previsiones de renovación. */
 export function isRunning(sub: Pick<PersonalSubscription, "status">): boolean {
   return sub.status === "active" || sub.status === "trial";
@@ -152,7 +162,10 @@ export function nextRenewal(sub: PersonalSubscription, today: ISODate): ISODate 
 
 export interface Forecast {
   subscriptionId: string;
+  /** Título que se muestra (nombre personalizado o del servicio). */
   name: string;
+  /** Nombre del servicio, para el logotipo. */
+  serviceName: string;
   categoryId: CategoryId;
   currency: Currency;
   date: ISODate;
@@ -174,7 +187,8 @@ export function forecasts(sub: PersonalSubscription, today: ISODate, until: ISOD
   const paid = paidRenewalDates(sub);
   return scheduleBetween(sub.renewalAnchor, sub.billingPeriod, today, until).map((date) => ({
     subscriptionId: sub.id,
-    name: sub.name,
+    name: titleOf(sub),
+    serviceName: sub.name,
     categoryId: sub.categoryId,
     currency: sub.currency,
     date,
@@ -205,7 +219,8 @@ export function missingRenewals(sub: PersonalSubscription, today: ISODate): Fore
     .filter((date) => !paid.has(date))
     .map((date) => ({
       subscriptionId: sub.id,
-      name: sub.name,
+      name: titleOf(sub),
+      serviceName: sub.name,
       categoryId: sub.categoryId,
       currency: sub.currency,
       date,
@@ -250,7 +265,7 @@ export function categoryTotals(subs: readonly PersonalSubscription[], today: ISO
     const amount = monthlyCost(sub, today);
     const row = map.get(sub.categoryId) ?? { categoryId: sub.categoryId, amount: 0, items: [] };
     row.amount += amount;
-    row.items.push({ id: sub.id, name: sub.name, amount });
+    row.items.push({ id: sub.id, name: titleOf(sub), amount });
     map.set(sub.categoryId, row);
   }
   for (const row of map.values()) row.items.sort((a, b) => b.amount - a.amount);
