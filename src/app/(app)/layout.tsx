@@ -38,10 +38,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <button
             type="submit"
             title="Cerrar sesión"
-            className="flex h-9 w-full items-center gap-2 rounded-full px-2 text-small text-muted hover:bg-active hover:text-ink group-data-collapsed/sidebar:justify-center"
+            className="flex h-9 w-full items-center gap-2 rounded-full px-2 text-small text-muted hover:bg-active hover:text-ink"
           >
             <Icon name="logout" />
-            <span className="group-data-collapsed/sidebar:sr-only">Cerrar sesión</span>
+            <span>Cerrar sesión</span>
           </button>
         </form>
       }

@@ -18,6 +18,8 @@ const codespaceHosts = inCodespace ? [`${codespaceName}-${port}.${forwardingDoma
 const actionOrigins = inCodespace ? [...codespaceHosts, `localhost:${port}`] : [];
 
 const nextConfig: NextConfig = {
+  // El indicador de desarrollo de Next.js, a la derecha: a la izquierda está el botón del menú.
+  devIndicators: { position: "bottom-right" },
   allowedDevOrigins: codespaceHosts,
   experimental: {
     serverActions: {

@@ -10,9 +10,9 @@ export function NavList({ items, current }: { items: NavItem[]; current: string 
         const content = (
           <>
             <Icon name={item.icon} />
-            <span className="flex-1 group-data-collapsed/sidebar:sr-only">{item.label}</span>
+            <span className="flex-1">{item.label}</span>
             {item.count ? (
-              <span className="rounded-full bg-accent-soft px-2 text-small font-semibold text-accent-ink tabular-nums group-data-collapsed/sidebar:absolute group-data-collapsed/sidebar:right-0 group-data-collapsed/sidebar:top-0 group-data-collapsed/sidebar:px-1.5 group-data-collapsed/sidebar:text-[0.6875rem]">
+              <span className="rounded-full bg-accent-soft px-2 text-small font-semibold text-accent-ink tabular-nums">
                 {item.count.value}
                 <span className="sr-only"> {item.count.noun}</span>
               </span>
@@ -26,7 +26,7 @@ export function NavList({ items, current }: { items: NavItem[]; current: string 
                 href={item.href}
                 aria-current={isCurrent ? "page" : undefined}
                 title={item.label}
-                className={`flex h-11 group-data-collapsed/sidebar:justify-center group-data-collapsed/sidebar:px-0 items-center gap-3 rounded-full px-4 text-small transition-colors duration-150 ${
+                className={`flex h-11 items-center gap-3 rounded-full px-4 text-small transition-colors duration-150 ${
                   isCurrent ? "bg-surface font-semibold text-ink" : "text-muted hover:bg-surface/70 hover:text-ink"
                 }`}
               >
@@ -36,7 +36,7 @@ export function NavList({ items, current }: { items: NavItem[]; current: string 
               <span
                 aria-disabled="true"
                 title="No incluida en el prototipo"
-                className="flex h-11 group-data-collapsed/sidebar:justify-center group-data-collapsed/sidebar:px-0 cursor-not-allowed items-center gap-3 rounded-full px-4 text-small text-muted"
+                className="flex h-11 cursor-not-allowed items-center gap-3 rounded-full px-4 text-small text-muted"
               >
                 {content}
                 <span className="sr-only">(no incluida en el prototipo)</span>

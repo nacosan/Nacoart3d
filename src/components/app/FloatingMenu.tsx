@@ -5,7 +5,7 @@ import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/ui/Icon";
 
 /**
- * Navegación en un botón circular flotante (abajo a la derecha, al alcance
+ * Navegación en un botón circular flotante (abajo a la izquierda, al alcance
  * del pulgar). Abre un panel con el logotipo, las secciones y la cuenta.
  *
  * El <dialog> cubre la pantalla de forma transparente y un contenedor flex
@@ -22,7 +22,7 @@ export function FloatingMenu({ children }: { children: React.ReactNode }) {
         type="button"
         onClick={() => dialogRef.current?.showModal()}
         aria-haspopup="dialog"
-        className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-5 z-20 inline-flex size-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-black/20 hover:bg-primary-hover"
+        className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] left-5 z-20 inline-flex size-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-black/20 hover:bg-primary-hover"
       >
         <Icon name="menu" size="lg" label="Abrir menú" />
       </button>
@@ -39,7 +39,7 @@ export function FloatingMenu({ children }: { children: React.ReactNode }) {
       >
         <div
           data-menu-backdrop="true"
-          className="flex min-h-full w-full items-end justify-end p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
+          className="flex min-h-full w-full items-end justify-start p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]"
         >
           <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-xs flex-col gap-5 overflow-y-auto rounded-card bg-surface p-5 shadow-xl">
             <div className="flex items-center justify-between gap-3">

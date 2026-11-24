@@ -1,14 +1,12 @@
 "use client";
 
-import { useContext, useId, useState } from "react";
+import { useId, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon } from "@/components/ui/Icon";
 import type { Hue } from "@/lib/catalog";
-import { SidebarCollapsedContext } from "./Sidebar";
 
 /**
  * Tu nombre con un desplegable de cuenta (cerrar sesión), cerrado al empezar.
- * Con la barra lateral plegada solo se ve tu inicial, sin desplegable.
  */
 export function ViewerMenu({
   name,
@@ -21,21 +19,11 @@ export function ViewerMenu({
   hue: Hue;
   actions?: React.ReactNode;
 }) {
-  const collapsed = useContext(SidebarCollapsedContext);
   const [open, setOpen] = useState(false);
   const panelId = useId();
 
-  if (collapsed) {
-    return (
-      <span title={name} className="flex justify-center rounded-inner bg-surface p-3">
-        <Avatar initials={initials} hue={hue} size="md" />
-        <span className="sr-only">{name}</span>
-      </span>
-    );
-  }
-
   return (
-    <div className="rounded-inner bg-surface">
+    <div className="rounded-inner bg-raised">
       <button
         type="button"
         onClick={() => setOpen(!open)}
