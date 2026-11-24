@@ -1,4 +1,4 @@
-# NacoArt3D
+# ManagSub
 
 Aplicación web con Next.js (App Router) y Supabase.
 

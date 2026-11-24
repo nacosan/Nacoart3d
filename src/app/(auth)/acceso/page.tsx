@@ -4,7 +4,7 @@ import { SignInForm } from "@/components/auth/AuthForms";
 import { Icon } from "@/components/ui/Icon";
 import { safeNext } from "@/lib/redirects";
 
-export const metadata: Metadata = { title: "Entrar · NacoArt3D" };
+export const metadata: Metadata = { title: "Entrar · ManagSub" };
 
 export default async function SignInPage(props: PageProps<"/acceso">) {
   const params = await props.searchParams;

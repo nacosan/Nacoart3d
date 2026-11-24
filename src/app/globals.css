@@ -83,6 +83,61 @@
   );
 }
 
+/*
+ * Modo oscuro: se activa con data-theme="dark" en <html> (botón de Ajustes,
+ * guardado en una cookie). Mismos nombres de tokens con valores oscuros y
+ * cálidos; los tonos de identidad invierten el par (fondo oscuro, tinta clara)
+ * para que gráficos y puntos sigan contrastando.
+ */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-ground: #141210;
+  --color-surface: #1e1c19;
+  --color-raised: #262320;
+  --color-active: #312d29;
+  --color-border: #3a3631;
+  --color-rule: #2b2825;
+  --color-control: #5e5850;
+  --color-ink: #f3efe8;
+  --color-muted: #b0a89c;
+  --color-primary: #5b52e6;
+  --color-primary-hover: #6d65f0;
+  --color-background: #141210;
+  --color-foreground: #f3efe8;
+
+  --color-accent: #8d86ff;
+  --color-accent-soft: #29264d;
+  --color-accent-ink: #cbc7ff;
+
+  --color-positive: #5cc98a;
+  --color-positive-soft: #173023;
+  --color-positive-ink: #a8e8c1;
+  --color-negative: #ff7a72;
+  --color-negative-soft: #3b1c1a;
+  --color-negative-ink: #ffb8b1;
+  --color-warning-soft: #3a2b14;
+  --color-warning-ink: #f6cd85;
+  --color-warning-line: #d9952b;
+  --color-neutral-soft: #2b2825;
+  --color-neutral-ink: #ddd6cc;
+
+  --color-azul-soft: #1d2a45;
+  --color-azul-ink: #a9c5ff;
+  --color-verde-soft: #16302a;
+  --color-verde-ink: #9fdcbc;
+  --color-ambar-soft: #3a2a14;
+  --color-ambar-ink: #f4c784;
+  --color-rosa-soft: #3a1c29;
+  --color-rosa-ink: #f6abc8;
+  --color-oliva-soft: #2c3115;
+  --color-oliva-ink: #cfdc95;
+  --color-turquesa-soft: #143033;
+  --color-turquesa-ink: #93dbe0;
+  --color-lila-soft: #2b2348;
+  --color-lila-ink: #cdbcff;
+}
+
 @layer base {
   :root {
     color-scheme: light;

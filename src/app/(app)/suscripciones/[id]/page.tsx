@@ -39,7 +39,7 @@ import {
 } from "@/lib/subscriptions/personal";
 import { relativeDays, todayIn } from "@/lib/time";
 
-export const metadata: Metadata = { title: "Suscripción · NacoArt3D" };
+export const metadata: Metadata = { title: "Suscripción · ManagSub" };
 
 const NOTICES: Record<string, { tone: "success" | "error"; text: string }> = {
   creada: { tone: "success", text: "Suscripción guardada." },

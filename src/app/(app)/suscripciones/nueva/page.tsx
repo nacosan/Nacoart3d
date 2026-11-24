@@ -7,7 +7,7 @@ import { getProfile } from "@/lib/data/profile";
 import { requireSession } from "@/lib/data/session";
 import { todayIn } from "@/lib/time";
 
-export const metadata: Metadata = { title: "Nueva suscripción · NacoArt3D" };
+export const metadata: Metadata = { title: "Nueva suscripción · ManagSub" };
 
 export default async function NewSubscriptionPage() {
   const session = await requireSession();

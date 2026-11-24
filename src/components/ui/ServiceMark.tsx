@@ -17,7 +17,7 @@ export function ServiceMark({ name, category, size = "md" }: { name: string; cat
   const dims = SIZES[size];
   if (brand) {
     return (
-      <span aria-hidden="true" className={`inline-flex flex-none items-center justify-center border border-border bg-surface ${dims.box}`}>
+      <span aria-hidden="true" className={`inline-flex flex-none items-center justify-center border border-border bg-white ${dims.box}`}>
         <svg viewBox="0 0 24 24" width={dims.icon} height={dims.icon} fill={`#${brand.hex}`} className="block">
           <path d={brand.path} />
         </svg>

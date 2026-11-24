@@ -39,7 +39,7 @@ export function ProfileForm({ initial, disabled }: { initial: ProfileValues; dis
                 className={`flex h-11 cursor-pointer items-center gap-2 rounded-full border-2 border-transparent pl-1.5 pr-4 text-small has-checked:border-ink has-focus-visible:outline-2 has-focus-visible:outline-accent ${HUE_CLASSES[hue]}`}
               >
                 <input type="radio" name="avatarHue" value={hue} defaultChecked={v.avatarHue === hue} className="sr-only" />
-                <span aria-hidden="true" className="inline-flex size-7 items-center justify-center rounded-full bg-white/60 font-semibold">
+                <span aria-hidden="true" className="inline-flex size-7 items-center justify-center rounded-full bg-surface/60 font-semibold">
                   {v.displayName.charAt(0).toLocaleUpperCase("es-ES") || "A"}
                 </span>
                 {HUE_NAMES[hue]}

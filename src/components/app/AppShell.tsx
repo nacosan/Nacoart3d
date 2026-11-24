@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo, LogoMark } from "@/components/brand/Logo";
 import type { Hue } from "@/lib/catalog";
 import { MobileMenu } from "./MobileMenu";
 import { NavList } from "./NavList";
@@ -15,13 +16,10 @@ export interface Viewer {
 function ProductMark() {
   return (
     <span className="flex items-center gap-2.5">
-      <span
-        aria-hidden="true"
-        className="inline-flex size-9 items-center justify-center rounded-[12px] bg-primary text-small font-semibold text-white"
-      >
-        N
+      <LogoMark size={36} />
+      <span className="text-body font-bold tracking-tight group-data-collapsed/sidebar:sr-only">
+        Manag<span className="text-accent-ink">Sub</span>
       </span>
-      <span className="text-body font-semibold group-data-collapsed/sidebar:sr-only">NacoArt3D</span>
     </span>
   );
 }
@@ -38,7 +36,6 @@ export function AppShell({
   navigation,
   viewer,
   viewerActions,
-  screenTitle,
   notice,
   sidebarCollapsed = false,
   children,
@@ -48,7 +45,8 @@ export function AppShell({
   navigation?: React.ReactNode;
   viewer: Viewer;
   viewerActions?: React.ReactNode;
-  screenTitle: string;
+  /** Ya no se muestra (la barra superior lleva el logotipo); se mantiene por compatibilidad. */
+  screenTitle?: string;
   notice?: React.ReactNode;
   /** Estado inicial de la barra lateral (cookie leída en el servidor). */
   sidebarCollapsed?: boolean;
@@ -82,11 +80,13 @@ export function AppShell({
       </Sidebar>
 
       <header className="sticky top-0 z-10 flex h-14 items-center justify-between bg-ground/95 px-2 backdrop-blur lg:hidden">
-        <MobileMenu title="NacoArt3D">
+        <MobileMenu title="ManagSub">
           {links}
           <ViewerMenu name={viewer.name} initials={viewer.initials} hue={viewer.hue} actions={viewerActions} />
         </MobileMenu>
-        <span className="truncate text-body font-semibold">{screenTitle}</span>
+        <Link href={home} className="rounded-control" aria-label="ManagSub, ir al inicio">
+          <Logo size={30} />
+        </Link>
         <span className="size-11" aria-hidden="true" />
       </header>
 

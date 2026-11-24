@@ -32,7 +32,7 @@ import {
 } from "@/lib/subscriptions/personal";
 import { relativeDays, todayIn } from "@/lib/time";
 
-export const metadata: Metadata = { title: "Resumen · NacoArt3D" };
+export const metadata: Metadata = { title: "Resumen · ManagSub" };
 
 const UPCOMING_DAYS = 30;
 

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { THEME_COOKIE, themeFrom } from "@/lib/theme";
 import { Manrope } from "next/font/google";
 import "./globals.css";
 
@@ -9,13 +11,15 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "NacoArt3D",
-  description: "Gestión de suscripciones personales y compartidas",
+  title: "ManagSub",
+  description: "ManagSub: gestiona tus suscripciones personales y compartidas",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // El tema se pinta desde el servidor (cookie) para que no parpadee al cargar.
+  const theme = themeFrom((await cookies()).get(THEME_COOKIE)?.value);
   return (
-    <html lang="es" className={`${manrope.variable} h-full antialiased`}>
+    <html lang="es" data-theme={theme} className={`${manrope.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col font-sans">{children}</body>
     </html>
   );

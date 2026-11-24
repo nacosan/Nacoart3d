@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ResetRequestForm } from "@/components/auth/AuthForms";
 
-export const metadata: Metadata = { title: "Recuperar contraseña · NacoArt3D" };
+export const metadata: Metadata = { title: "Recuperar contraseña · ManagSub" };
 
 export default function ResetRequestPage() {
   return (

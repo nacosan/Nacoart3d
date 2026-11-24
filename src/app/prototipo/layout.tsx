@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Prototipo · NacoArt3D",
+  title: "Prototipo · ManagSub",
   robots: { index: false, follow: false },
 };
 

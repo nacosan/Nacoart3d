@@ -4,7 +4,7 @@ import { Icon, type IconName } from "./Icon";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-primary text-white hover:bg-primary-hover active:bg-accent-ink",
+  primary: "bg-primary text-white hover:bg-primary-hover active:bg-primary-hover",
   secondary: "bg-surface text-ink border border-border hover:bg-raised active:bg-active",
   ghost: "text-ink hover:bg-active active:bg-active",
   danger: "bg-surface text-negative-ink border border-negative/40 hover:bg-negative-soft",

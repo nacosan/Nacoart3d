@@ -14,7 +14,7 @@ import { daysBetween, formatDay } from "@/lib/finance/dates";
 import { isRunning, missingRenewals, myShareOf, nextRenewal, priceOn, type PersonalSubscription } from "@/lib/subscriptions/personal";
 import { relativeDays, todayIn } from "@/lib/time";
 
-export const metadata: Metadata = { title: "Suscripciones · NacoArt3D" };
+export const metadata: Metadata = { title: "Suscripciones · ManagSub" };
 
 export default async function SubscriptionsPage(props: PageProps<"/suscripciones">) {
   const params = await props.searchParams;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { Logo } from "@/components/brand/Logo";
 import { Icon } from "@/components/ui/Icon";
 
 /**
@@ -31,7 +32,7 @@ export function MobileMenu({ title, children }: { title: string; children: React
       >
         <div className="flex h-full flex-col px-4 pb-6 pt-2">
           <div className="flex h-12 items-center justify-between">
-            <span className="text-body font-semibold">{title}</span>
+            <Logo size={30} />
             <button
               type="button"
               onClick={() => dialogRef.current?.close()}

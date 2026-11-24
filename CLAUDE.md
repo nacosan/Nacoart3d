@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# NacoArt3D
+# ManagSub
 
 ## Stack
 - Next.js 16 (App Router, Turbopack), React 19, TypeScript estricto.

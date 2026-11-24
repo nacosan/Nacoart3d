@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { NewPasswordForm } from "@/components/auth/AuthForms";
 
-export const metadata: Metadata = { title: "Nueva contraseña · NacoArt3D" };
+export const metadata: Metadata = { title: "Nueva contraseña · ManagSub" };
 
 /** Se llega desde el enlace del correo de recuperación (ya con sesión). */
 export default function NewPasswordPage() {

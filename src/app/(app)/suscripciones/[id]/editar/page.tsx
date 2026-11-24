@@ -10,7 +10,7 @@ import { getSubscription } from "@/lib/data/subscriptions";
 import { centsToInput } from "@/lib/finance/money";
 import { todayIn } from "@/lib/time";
 
-export const metadata: Metadata = { title: "Editar suscripción · NacoArt3D" };
+export const metadata: Metadata = { title: "Editar suscripción · ManagSub" };
 
 export default async function EditSubscriptionPage(props: PageProps<"/suscripciones/[id]/editar">) {
   const { id } = await props.params;

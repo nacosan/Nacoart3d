@@ -49,7 +49,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </button>
         </form>
       }
-      screenTitle="NacoArt3D"
+      screenTitle="ManagSub"
       notice={profile.stored ? null : <SetupNotice />}
       sidebarCollapsed={sidebarCollapsed}
     >

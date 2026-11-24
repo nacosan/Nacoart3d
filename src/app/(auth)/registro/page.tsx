@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SignUpForm } from "@/components/auth/AuthForms";
 
-export const metadata: Metadata = { title: "Crear cuenta · NacoArt3D" };
+export const metadata: Metadata = { title: "Crear cuenta · ManagSub" };
 
 export default function SignUpPage() {
   return (

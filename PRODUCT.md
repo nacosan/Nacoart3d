@@ -66,7 +66,7 @@ previsión y qué es un pago confirmado, sin contar nada dos veces.
 - **Stack:** Next.js 16 (App Router), React 19, TypeScript estricto, Tailwind CSS 4 y Supabase
   (Auth y Postgres con RLS). Las reglas del proyecto están en CLAUDE.md.
 - El detalle de negocio y el modelo de datos están en `docs/propuesta-mvp.md`.
-- **Pendiente de decidir:** el nombre definitivo del producto. Mientras tanto, se usa "NacoArt3D".
+- **Nombre del producto:** ManagSub (decidido el 2026-11-24). El repositorio sigue llamándose Nacoart3d.
 
 ## Evidence on Hand
 
