@@ -1,8 +1,8 @@
 import { signOut } from "@/app/(auth)/actions";
-import { AppNav } from "@/components/app/AppNav";
-import { AppShell } from "@/components/app/AppShell";
-import type { NavItem } from "@/components/app/nav";
-import { Icon } from "@/components/ui/Icon";
+import { AppNav } from "@/components/organisms/app/AppNav";
+import { AppShell } from "@/components/templates/AppShell";
+import type { NavItem } from "@/components/organisms/app/nav";
+import { Icon } from "@/components/atoms/Icon";
 import { getProfile, initialsOf } from "@/lib/data/profile";
 import { requireSession } from "@/lib/data/session";
 

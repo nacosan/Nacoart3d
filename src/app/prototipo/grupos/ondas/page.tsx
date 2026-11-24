@@ -1,9 +1,9 @@
-import { AppShell } from "@/components/app/AppShell";
-import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/Button";
-import { Money } from "@/components/ui/Money";
-import { Panel } from "@/components/ui/Panel";
-import { Pill } from "@/components/ui/Pill";
+import { AppShell } from "@/components/templates/AppShell";
+import { Avatar } from "@/components/atoms/Avatar";
+import { Button } from "@/components/atoms/Button";
+import { Money } from "@/components/atoms/Money";
+import { Panel } from "@/components/molecules/Panel";
+import { Pill } from "@/components/atoms/Pill";
 import { CoverageStrip, type StripRow } from "@/components/prototype/CoverageStrip";
 import {
   ConditionsPanel,

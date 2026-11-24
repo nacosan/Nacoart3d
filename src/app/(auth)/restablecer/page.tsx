@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { NewPasswordForm } from "@/components/auth/AuthForms";
+import { NewPasswordForm } from "@/components/organisms/auth/AuthForms";
 
 export const metadata: Metadata = { title: "Nueva contraseña · ManagSub" };
 

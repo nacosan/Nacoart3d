@@ -1,5 +1,5 @@
-import { Avatar } from "@/components/ui/Avatar";
-import { Icon } from "@/components/ui/Icon";
+import { Avatar } from "@/components/atoms/Avatar";
+import { Icon } from "@/components/atoms/Icon";
 import type { Hue } from "@/lib/catalog";
 import { formatDay, type ISODate } from "@/lib/finance/dates";
 

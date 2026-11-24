@@ -1,4 +1,4 @@
-import type { NavItem } from "@/components/app/nav";
+import type { NavItem } from "@/components/organisms/app/nav";
 import { ondas } from "@/prototype/model";
 
 const awaiting = ondas.members.filter((member) => member.declaredPending > 0).length;

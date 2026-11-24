@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ResetRequestForm } from "@/components/auth/AuthForms";
+import { ResetRequestForm } from "@/components/organisms/auth/AuthForms";
 
 export const metadata: Metadata = { title: "Recuperar contraseña · ManagSub" };
 

@@ -1,4 +1,4 @@
-import { HUE_DOT, HUE_STROKE } from "@/components/ui/tones";
+import { HUE_DOT, HUE_STROKE } from "@/components/atoms/tones";
 import type { Hue } from "@/lib/catalog";
 import { formatMoney, type Cents } from "@/lib/finance/money";
 

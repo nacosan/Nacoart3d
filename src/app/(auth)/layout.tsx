@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "@/components/brand/Logo";
+import { Logo } from "@/components/atoms/Logo";
 
 /** Pantallas sin sesión: una tarjeta centrada, sin navegación. */
 export default function AuthLayout({ children }: LayoutProps<"/">) {

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { NewSubscriptionForm } from "@/components/subscriptions/NewSubscriptionForm";
+import { NewSubscriptionForm } from "@/components/organisms/subscriptions/NewSubscriptionForm";
 import { getCatalog } from "@/lib/data/catalog";
-import { Icon } from "@/components/ui/Icon";
+import { Icon } from "@/components/atoms/Icon";
 import { getProfile } from "@/lib/data/profile";
 import { requireSession } from "@/lib/data/session";
 import { todayIn } from "@/lib/time";

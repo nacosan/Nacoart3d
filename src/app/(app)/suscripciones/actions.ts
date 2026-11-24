@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { FormState } from "@/components/forms/FormState";
+import type { FormState } from "@/components/molecules/FormState";
 import { isCategoryId } from "@/lib/catalog";
 import { getSession } from "@/lib/data/session";
 import { GENERIC_ERROR, userMessage } from "@/lib/errors";

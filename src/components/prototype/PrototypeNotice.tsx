@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Icon } from "@/components/ui/Icon";
+import { Icon } from "@/components/atoms/Icon";
 
 const VIEWS = [
   { href: "/prototipo", label: "Resumen de Ana" },

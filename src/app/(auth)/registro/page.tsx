@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SignUpForm } from "@/components/auth/AuthForms";
+import { SignUpForm } from "@/components/organisms/auth/AuthForms";
 
 export const metadata: Metadata = { title: "Crear cuenta · ManagSub" };
 

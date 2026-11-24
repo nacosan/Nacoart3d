@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { FormState } from "@/components/forms/FormState";
+import type { FormState } from "@/components/molecules/FormState";
 import { isHue } from "@/lib/catalog";
 import { getSession } from "@/lib/data/session";
 import { userMessage } from "@/lib/errors";

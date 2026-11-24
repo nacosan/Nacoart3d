@@ -1,9 +1,9 @@
-import { AppShell } from "@/components/app/AppShell";
-import { Button } from "@/components/ui/Button";
-import { Icon } from "@/components/ui/Icon";
-import { Money } from "@/components/ui/Money";
-import { Panel } from "@/components/ui/Panel";
-import { Pill } from "@/components/ui/Pill";
+import { AppShell } from "@/components/templates/AppShell";
+import { Button } from "@/components/atoms/Button";
+import { Icon } from "@/components/atoms/Icon";
+import { Money } from "@/components/atoms/Money";
+import { Panel } from "@/components/molecules/Panel";
+import { Pill } from "@/components/atoms/Pill";
 import { CoverageStrip } from "@/components/prototype/CoverageStrip";
 import {
   ConditionsPanel,
@@ -13,7 +13,7 @@ import {
   SplitPanel,
   type MovementRow,
 } from "@/components/prototype/GroupPieces";
-import { Meter } from "@/components/charts/Meter";
+import { Meter } from "@/components/atoms/Meter";
 import { PrototypeNotice } from "@/components/prototype/PrototypeNotice";
 import { SeatRow } from "@/components/prototype/SeatRow";
 import { memberSegments } from "@/components/prototype/coverage";

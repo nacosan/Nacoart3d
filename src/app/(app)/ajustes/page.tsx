@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { ProfileForm } from "@/components/settings/ProfileForm";
-import { ThemeToggle } from "@/components/settings/ThemeToggle";
+import { ProfileForm } from "@/components/organisms/settings/ProfileForm";
+import { ThemeToggle } from "@/components/organisms/settings/ThemeToggle";
 import { THEME_COOKIE, themeFrom } from "@/lib/theme";
 import { getProfile } from "@/lib/data/profile";
 import { requireSession } from "@/lib/data/session";

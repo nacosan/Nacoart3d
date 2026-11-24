@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SignInForm } from "@/components/auth/AuthForms";
-import { Icon } from "@/components/ui/Icon";
+import { SignInForm } from "@/components/organisms/auth/AuthForms";
+import { Icon } from "@/components/atoms/Icon";
 import { safeNext } from "@/lib/redirects";
 
 export const metadata: Metadata = { title: "Entrar · ManagSub" };

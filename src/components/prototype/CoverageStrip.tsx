@@ -1,9 +1,9 @@
-import { Avatar } from "@/components/ui/Avatar";
-import { Icon, type IconName } from "@/components/ui/Icon";
+import { Avatar } from "@/components/atoms/Avatar";
+import { Icon, type IconName } from "@/components/atoms/Icon";
 import type { Hue } from "@/lib/catalog";
 import { formatDay, parseISODate, type ISODate } from "@/lib/finance/dates";
 import type { ProviderPeriod } from "@/prototype/model";
-import { SEGMENT_LABEL, type Segment, type SegmentKind } from "./coverage";
+import { SEGMENT_LABEL, type Segment, type SegmentKind } from "@/components/prototype/coverage";
 
 /* Clases literales para que Tailwind las genere (columnas del subgrid de periodos). */
 const COL_START = [

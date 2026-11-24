@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import type { FormState } from "@/components/forms/FormState";
+import type { FormState } from "@/components/molecules/FormState";
 import { requestOrigin } from "@/lib/origin";
 import { safeNext } from "@/lib/redirects";
 import { createClient } from "@/utils/supabase/server";

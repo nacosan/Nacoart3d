@@ -10,7 +10,13 @@
 
 ## Estructura
 - `src/app/`: rutas (App Router).
-- `src/components/`: componentes.
+- `src/components/`: componentes, por niveles (Atomic Design):
+  - `atoms/`: piezas mínimas y genéricas (botón, icono, etiqueta, importe, avatar, logotipo).
+  - `molecules/`: combinaciones pequeñas y genéricas (campo con etiqueta, ventana, tarjeta, botones de acción).
+  - `organisms/<apartado>/`: bloques con sentido propio, agrupados por apartado (`subscriptions/`, `groups/`, `app/`, `charts/`…).
+  - `templates/`: estructura de las pantallas (`AppShell`). Las páginas son los `page.tsx` de `src/app/`.
+  - `prototype/`: prototipo con datos ficticios (solo en desarrollo).
+  - Un componente nuevo va al nivel más bajo que le corresponda; si solo lo usa un apartado, a su organismo.
 - `src/utils/supabase/`: `env.ts` (variables), `client.ts` (navegador), `server.ts` (servidor), `proxy.ts` (`updateSession`).
 - `src/proxy.ts`: entrada de Proxy de Next 16 (no crear `middleware.ts`).
 - `supabase/migrations/`: migraciones SQL.

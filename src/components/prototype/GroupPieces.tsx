@@ -1,9 +1,9 @@
-import { Avatar } from "@/components/ui/Avatar";
-import { Icon } from "@/components/ui/Icon";
-import { Money } from "@/components/ui/Money";
-import { Panel } from "@/components/ui/Panel";
-import { Pill } from "@/components/ui/Pill";
-import { ServiceMark } from "@/components/ui/ServiceMark";
+import { Avatar } from "@/components/atoms/Avatar";
+import { Icon } from "@/components/atoms/Icon";
+import { Money } from "@/components/atoms/Money";
+import { Panel } from "@/components/molecules/Panel";
+import { Pill } from "@/components/atoms/Pill";
+import { ServiceMark } from "@/components/atoms/ServiceMark";
 import type { CategoryId, Hue } from "@/lib/catalog";
 import { formatDay, type ISODate } from "@/lib/finance/dates";
 import type { Cents } from "@/lib/finance/money";

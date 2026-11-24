@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { LoadProblem } from "@/components/app/LoadProblem";
-import { EditSubscriptionForm } from "@/components/subscriptions/SubscriptionForms";
-import { Icon } from "@/components/ui/Icon";
+import { LoadProblem } from "@/components/molecules/LoadProblem";
+import { EditSubscriptionForm } from "@/components/organisms/subscriptions/SubscriptionForms";
+import { Icon } from "@/components/atoms/Icon";
 import { getProfile } from "@/lib/data/profile";
 import { requireSession } from "@/lib/data/session";
 import { getSubscription } from "@/lib/data/subscriptions";
