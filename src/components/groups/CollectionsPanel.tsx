@@ -92,10 +92,6 @@ export function CollectionsPanel({
     { overdue: 0, pending: 0, awaiting: 0 },
   );
   const declared = payments.filter((payment) => payment.status === "declared");
-  const recent = payments
-    .filter((payment) => payment.status === "confirmed")
-    .sort((a, b) => (a.paidOn < b.paidOn ? 1 : -1))
-    .slice(0, 8);
   const nameOf = (memberId: string) => names.get(memberId)?.displayName ?? "Participante anterior";
   const payable: PayableMember[] = rows
     .filter(({ row }) => names.has(row.id))
@@ -177,33 +173,61 @@ export function CollectionsPanel({
         </section>
       ) : null}
 
-      {leader && recent.length > 0 ? (
-        <details className="group mt-3 rounded-inner border border-border">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-inner px-4 py-3 text-small font-semibold text-muted [&::-webkit-details-marker]:hidden">
-            Últimos cobros
-            <Icon name="chevron" className="transition-transform duration-150 group-open:rotate-90" />
-          </summary>
-          <ul className="flex flex-col px-4 pb-3">
-            {recent.map((payment) => (
-              <li key={payment.id} className="flex flex-wrap items-center gap-3 border-b border-rule py-2.5 text-small last:border-b-0">
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold">{nameOf(payment.memberId)}</p>
-                  <p className="text-[0.8125rem] text-muted">
-                    {coverLabel(sub, payment)} · {formatDay(payment.paidOn, true)}
-                    {payment.note ? ` · ${payment.note}` : ""}
-                  </p>
-                </div>
-                <Money cents={payment.amountCents} currency={sub.currency} className="font-semibold" />
-                <form action={voidMemberPayment.bind(null, sub.id, payment.id)}>
-                  <button type="submit" className="rounded-full px-2 py-1 text-[0.8125rem] font-medium text-muted hover:bg-active hover:text-ink">
-                    Anular
-                  </button>
-                </form>
-              </li>
-            ))}
-          </ul>
-        </details>
-      ) : null}
     </div>
+  );
+}
+
+/**
+ * Cobros confirmados a los miembros, con "Borrar" (anular) por si se anotó
+ * alguno por error. Para Ajustes de la suscripción; solo lo ve quien paga el plan.
+ */
+export function CollectedPaymentsHistory({
+  sub,
+  members,
+  payments,
+}: {
+  sub: PersonalSubscription;
+  members: GroupMember[];
+  payments: MemberPaymentRow[];
+}) {
+  const names = new Map(members.map((member) => [member.memberId, member.displayName]));
+  const rows = payments
+    .filter((payment) => payment.status === "confirmed" || payment.status === "voided")
+    .sort((a, b) => (a.paidOn < b.paidOn ? 1 : -1))
+    .slice(0, 20);
+  if (rows.length === 0) return <p className="text-small text-muted">Aún no has anotado cobros.</p>;
+  return (
+    <ul className="flex flex-col">
+      {rows.map((payment) => {
+        const voided = payment.status === "voided";
+        return (
+          <li key={payment.id} className="flex flex-wrap items-center gap-3 border-b border-rule py-2.5 text-small last:border-b-0">
+            <div className="min-w-0 flex-1">
+              <p className={`font-semibold ${voided ? "text-muted line-through" : ""}`}>{names.get(payment.memberId) ?? "Participante anterior"}</p>
+              <p className="text-[0.8125rem] text-muted">
+                {coverLabel(sub, payment)} · {formatDay(payment.paidOn, true)}
+                {payment.note ? ` · ${payment.note}` : ""}
+              </p>
+            </div>
+            <Money cents={payment.amountCents} currency={sub.currency} className={`font-semibold ${voided ? "text-muted line-through" : ""}`} />
+            {voided ? (
+              <span className="text-[0.8125rem] text-muted">Anulado</span>
+            ) : (
+              <details>
+                <summary className="cursor-pointer list-none rounded-full px-2 py-1 text-[0.8125rem] font-medium text-muted hover:bg-active hover:text-ink [&::-webkit-details-marker]:hidden">
+                  Borrar
+                </summary>
+                <form action={voidMemberPayment.bind(null, sub.id, payment.id)} className="mt-2 flex flex-col items-end gap-2">
+                  <p className="max-w-56 text-right text-[0.8125rem] text-muted">Dejará de contar. Quedará en el historial como anulado.</p>
+                  <SubmitButton variant="danger" pendingLabel="Borrando…">
+                    Sí, borrar
+                  </SubmitButton>
+                </form>
+              </details>
+            )}
+          </li>
+        );
+      })}
+    </ul>
   );
 }

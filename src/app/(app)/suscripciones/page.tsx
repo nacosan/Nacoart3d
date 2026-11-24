@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LoadProblem } from "@/components/app/LoadProblem";
 import { StatusPill } from "@/components/subscriptions/StatusPill";
 import { ButtonLink } from "@/components/ui/Button";
+import { FloatingActionLink } from "@/components/ui/FloatingAction";
 import { Icon } from "@/components/ui/Icon";
 import { Money } from "@/components/ui/Money";
 import { ServiceMark } from "@/components/ui/ServiceMark";
@@ -30,9 +31,6 @@ export default async function SubscriptionsPage(props: PageProps<"/suscripciones
           <h1 className="text-title font-semibold">Suscripciones</h1>
           <p className="mt-1 text-body text-muted">Todo lo que pagas de forma periódica.</p>
         </div>
-        <ButtonLink href="/suscripciones/nueva" variant="primary" icon="plus">
-          Añadir
-        </ButtonLink>
       </header>
 
       {params.salido ? (
@@ -61,6 +59,7 @@ export default async function SubscriptionsPage(props: PageProps<"/suscripciones
           <Lists subs={result.data} today={today} />
         )}
       </div>
+      <FloatingActionLink href="/suscripciones/nueva" label="Añadir suscripción" />
     </>
   );
 }

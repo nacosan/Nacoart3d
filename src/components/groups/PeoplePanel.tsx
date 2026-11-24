@@ -8,7 +8,7 @@ import type { GroupMember, PendingInvite } from "@/lib/data/groups";
 import { formatDay } from "@/lib/finance/dates";
 import type { PersonalSubscription } from "@/lib/subscriptions/personal";
 import { AddPeople } from "./AddPeople";
-import { memberColors } from "./ShareDonut";
+import { memberColors } from "./ShareBar";
 
 /** Plazas del plan: ocupadas, reservadas por invitación y libres. */
 function Seats({ members, invites, max }: { members: GroupMember[]; invites: PendingInvite[]; max: number | null }) {

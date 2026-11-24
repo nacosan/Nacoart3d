@@ -167,7 +167,7 @@ function buildInstallments(
       declared: slot.declared,
       status,
       paidOn: slot.paidOn,
-      paymentId: status === "paid" ? slot.paymentId : null,
+      paymentId: slot.paymentId,
       paymentPeriods: slot.paymentPeriods,
     };
   });
@@ -265,6 +265,8 @@ export interface CalendarSegment {
   from: ISODate;
   through: ISODate;
   paidOn: ISODate | null;
+  /** Último pago confirmado del tramo (para poder anularlo si fue un error). */
+  paymentId: string | null;
   due: Cents;
   confirmed: Cents;
   declared: Cents;
@@ -314,6 +316,7 @@ export function calendarSegments(
       from: first.date,
       through: addDays(lastItem.end, -1),
       paidOn: lastItem.paidOn,
+      paymentId: lastItem.paymentId,
       due: group.reduce((sum, item) => sum + item.due, 0),
       confirmed: group.reduce((sum, item) => sum + item.confirmed, 0),
       declared: group.reduce((sum, item) => sum + item.declared, 0),

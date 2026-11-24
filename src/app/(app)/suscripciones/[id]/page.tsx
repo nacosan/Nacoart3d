@@ -4,10 +4,10 @@ import { notFound } from "next/navigation";
 import { deleteSubscription, voidPayment } from "@/app/(app)/suscripciones/actions";
 import { LoadProblem } from "@/components/app/LoadProblem";
 import { ShareForm } from "@/components/groups/GroupForms";
-import { CollectionsPanel } from "@/components/groups/CollectionsPanel";
+import { CollectedPaymentsHistory, CollectionsPanel } from "@/components/groups/CollectionsPanel";
 import { PeoplePanel } from "@/components/groups/PeoplePanel";
 import { PendingConfirmations } from "@/components/groups/PendingConfirmations";
-import { ShareDonut, memberColors } from "@/components/groups/ShareDonut";
+import { ShareBar, memberColors } from "@/components/groups/ShareBar";
 import { SubmitButton } from "@/components/forms/SubmitButton";
 import { PaymentCalendar, type CalendarRow } from "@/components/subscriptions/PaymentCalendar";
 import { SectionActions, type Section } from "@/components/subscriptions/SectionActions";
@@ -57,14 +57,14 @@ const NOTICES: Record<string, { tone: "success" | "error"; text: string }> = {
   creada: { tone: "success", text: "Suscripción guardada." },
   guardada: { tone: "success", text: "Cambios guardados." },
   pago: { tone: "success", text: "Pago anotado." },
-  anulado: { tone: "success", text: "Pago anulado. Queda en el historial como anulado." },
+  anulado: { tone: "success", text: "Pago borrado. Ya no cuenta; queda en el historial como anulado." },
   unido: { tone: "success", text: "Ya formas parte del grupo." },
   revocada: { tone: "success", text: "Invitación anulada. La plaza vuelve a estar libre." },
   quitado: { tone: "success", text: "Esa persona ya no forma parte del grupo." },
   cobro: { tone: "success", text: "Pago anotado." },
   confirmado: { tone: "success", text: "Pago confirmado." },
   rechazado: { tone: "success", text: "Pago rechazado. Sigue pendiente." },
-  cobroAnulado: { tone: "success", text: "Cobro anulado. Queda en el historial como anulado." },
+  cobroAnulado: { tone: "success", text: "Cobro borrado. Ya no cuenta; queda en el historial como anulado." },
   error: { tone: "error", text: "No hemos podido completar la operación. Inténtalo de nuevo." },
 };
 
@@ -131,6 +131,8 @@ export default async function SubscriptionPage(props: PageProps<"/suscripciones/
             isGuest: member?.isGuest ?? false,
             // El líder anota cobros de quien sigue en el grupo; un miembro declara los suyos.
             payAction: member ? ("cobros" as const) : null,
+            // Solo quien paga el plan puede anular cobros.
+            voidKind: isMember ? null : ("member" as const),
             segments: calendarSegments(installments, rangeStart, rangeLength, sub.billingPeriod),
           };
         })
@@ -143,6 +145,7 @@ export default async function SubscriptionPage(props: PageProps<"/suscripciones/
           hue: profile.avatarHue,
           isGuest: false,
           payAction: "pago" as const,
+          voidKind: "ledger" as const,
           segments: calendarSegments(ownInstallments(sub, today, rangeEndDate), rangeStart, rangeLength, sub.billingPeriod),
         },
       ];
@@ -191,23 +194,28 @@ export default async function SubscriptionPage(props: PageProps<"/suscripciones/
       icon: "plus",
       floating: true,
       title: shared ? "Anotar un pago al servicio" : sub.participation === "member" ? "Anotar un pago" : "Anotar un pago",
-      content: (
-        <div className="flex flex-col gap-6">
-          <PaymentPanel sub={sub} today={today} requested={requestedRenewal} />
-          <History sub={sub} />
-        </div>
-      ),
+      content: <PaymentPanel sub={sub} today={today} requested={requestedRenewal} />,
     });
     sections.push({
       key: "ajustes",
       label: "Ajustes",
       icon: "settings",
       title: "Ajustes de la suscripción",
+      size: "lg",
       content: (
         <div className="flex flex-col gap-5">
           <ButtonLink href={`/suscripciones/${sub.id}/editar`} icon="pencil">
             Editar datos
           </ButtonLink>
+          <History sub={sub} title={shared ? "Tus pagos al servicio" : "Pagos anotados"} />
+          {shared ? (
+            <section aria-labelledby="cobros-anotados" className="border-t border-rule pt-5">
+              <h3 id="cobros-anotados" className="mb-3 text-body font-semibold">
+                Cobros anotados
+              </h3>
+              <CollectedPaymentsHistory sub={sub} members={members} payments={memberPayments} />
+            </section>
+          ) : null}
           {canShare ? <ShareCard sub={sub} verifiedMax={plan?.maxMembers && plan.maxMembers >= 2 ? plan.maxMembers : null} /> : null}
           <PricePanel sub={sub} today={today} />
           <DangerZone sub={sub} />
@@ -229,9 +237,15 @@ export default async function SubscriptionPage(props: PageProps<"/suscripciones/
           {sub.nickname ? <p className="text-small text-muted">{sub.name}</p> : null}
           <p className="mt-1 flex flex-wrap items-center gap-2 text-small text-muted">
             <StatusPill status={sub.status} />
-            {shared ? (
+            {/* Igual para quien paga y para quien no: también si el plan lo paga alguien fuera de la app. */}
+            {shared || sub.participation === "member" ? (
               <Pill tone="accent" icon="users">
-                {isMember ? "Compartida contigo" : "Compartida"}
+                Compartida
+              </Pill>
+            ) : null}
+            {sub.role === "leader" ? (
+              <Pill tone="warning" icon="crown">
+                Propietario
               </Pill>
             ) : null}
             {CATEGORIES[sub.categoryId].name} · {PERIOD_LABEL[sub.billingPeriod]}
@@ -301,35 +315,74 @@ function Overview({ sub, today, members }: { sub: PersonalSubscription; today: s
   const price = priceOn(sub.prices, today);
   const next = nextRenewal(sub, today);
   const coming = forecasts(sub, today, addMonths(today, sub.billingPeriod === "monthly" ? 3 : 24)).slice(0, 3);
+  const per = sub.billingPeriod === "monthly" ? "al mes" : "al año";
+  // Si no pagas tú el plan, lo primero es lo que pagas tú y después el total.
+  const notOwner = sub.role === "member" || sub.participation === "member";
+  const mine = myShareOf(sub, price);
+  const payer =
+    sub.participation === "member"
+      ? (sub.planOwnerName ?? "Otra persona")
+      : (members.find((member) => member.role === "leader")?.displayName ?? null);
+  // Miembro de un plan que paga alguien fuera de la app: barra de dos tramos (tú y el resto).
+  const externalMembers: GroupMember[] =
+    sub.participation === "member"
+      ? [
+          { memberId: "yo", displayName: "Tú", avatarHue: "azul", isGuest: false, role: "member", isMe: true },
+          { memberId: "resto", displayName: `Resto del plan (${payer})`, avatarHue: "verde", isGuest: false, role: "leader", isMe: false },
+        ]
+      : [];
   return (
     <section aria-labelledby="resumen" className="min-w-0 rounded-card bg-surface p-6 sm:p-8">
       <h2 id="resumen" className="sr-only">
         Resumen
       </h2>
-      <p className="flex flex-wrap items-baseline gap-x-2">
-        <Money cents={price} currency={sub.currency} className="text-figure font-bold" />
-        <span className="text-body text-muted">
-          {sub.billingPeriod === "monthly" ? "al mes" : "al año"}
-          {sub.mode === "shared" || sub.participation === "member" ? " en total" : ""}
-        </span>
-      </p>
-      {sub.participation === "member" ? (
-        <p className="mt-2 text-body">
-          Tu parte: <Money cents={myShareOf(sub, price)} currency={sub.currency} className="font-semibold" />{" "}
-          <span className="text-muted">
-            {sub.billingPeriod === "monthly" ? "al mes" : "al año"}
-            {sub.planOwnerName ? ` · lo paga ${sub.planOwnerName}` : " · lo paga otra persona"}
+      {notOwner ? (
+        <>
+          <p className="flex flex-wrap items-baseline gap-x-2">
+            <Money cents={mine} currency={sub.currency} className="text-figure font-bold" />
+            <span className="text-body text-muted">{per} · tu parte</span>
+          </p>
+          <p className="mt-1 text-small text-muted">
+            De <Money cents={price} currency={sub.currency} className="font-semibold text-ink" /> {per} en total
+            {payer ? ` · lo paga ${payer}` : ""}
+          </p>
+        </>
+      ) : (
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          <Money cents={price} currency={sub.currency} className="text-figure font-bold" />
+          <span className="text-body text-muted">
+            {per}
+            {sub.mode === "shared" ? " en total" : ""}
           </span>
         </p>
-      ) : null}
+      )}
       {sub.mode === "shared" && members.length > 0 ? (
         <div className="mt-6">
-          <ShareDonut
+          <ShareBar
             members={members}
             total={price}
             currency={sub.currency}
             period={sub.billingPeriod}
             showAllAmounts={sub.role === "leader"}
+            hideMine={notOwner}
+          />
+        </div>
+      ) : null}
+      {externalMembers.length > 0 ? (
+        <div className="mt-6">
+          <ShareBar
+            members={externalMembers}
+            total={price}
+            currency={sub.currency}
+            period={sub.billingPeriod}
+            showAllAmounts
+            hideMine
+            shares={
+              new Map([
+                ["yo", mine],
+                ["resto", Math.max(0, price - mine)],
+              ])
+            }
           />
         </div>
       ) : null}
@@ -433,7 +486,7 @@ function PaymentPanel({ sub, today, requested }: { sub: PersonalSubscription; to
   );
 }
 
-function History({ sub }: { sub: PersonalSubscription }) {
+function History({ sub, title }: { sub: PersonalSubscription; title: string }) {
   const payments = sub.entries
     .filter((entry) => entry.kind === "personal_payment")
     .sort((a, b) => (a.occurredOn < b.occurredOn ? 1 : a.occurredOn > b.occurredOn ? -1 : 0));
@@ -442,7 +495,7 @@ function History({ sub }: { sub: PersonalSubscription }) {
     <section aria-labelledby="historial" className="border-t border-rule pt-5">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <h3 id="historial" className="text-body font-semibold">
-          Historial de pagos
+          {title}
         </h3>
         {payments.length > 0 ? (
           <p className="text-small text-muted">
@@ -477,13 +530,13 @@ function History({ sub }: { sub: PersonalSubscription }) {
                 ) : (
                   <details className="group">
                     <summary className="cursor-pointer list-none rounded-full px-2 py-1 text-[0.8125rem] font-medium text-muted hover:bg-active hover:text-ink [&::-webkit-details-marker]:hidden">
-                      Anular
+                      Borrar
                     </summary>
                     <form action={voidPayment.bind(null, sub.id, entry.id)} className="mt-2 flex flex-col items-end gap-2">
                       <input type="hidden" name="idempotencyKey" value={crypto.randomUUID()} />
-                      <p className="max-w-56 text-right text-[0.8125rem] text-muted">Quedará en el historial marcado como anulado.</p>
-                      <SubmitButton variant="danger" pendingLabel="Anulando…">
-                        Sí, anular
+                      <p className="max-w-56 text-right text-[0.8125rem] text-muted">Dejará de contar. Quedará en el historial como anulado.</p>
+                      <SubmitButton variant="danger" pendingLabel="Borrando…">
+                        Sí, borrar
                       </SubmitButton>
                     </form>
                   </details>

@@ -11,6 +11,7 @@ import { ReceivedInvitations } from "@/components/groups/ReceivedInvitations";
 import { ReceivedReminders } from "@/components/groups/ReceivedReminders";
 import { QuickPay } from "@/components/subscriptions/QuickPay";
 import { ButtonLink } from "@/components/ui/Button";
+import { ActionPillLink } from "@/components/ui/FloatingAction";
 import { Icon } from "@/components/ui/Icon";
 import { Money } from "@/components/ui/Money";
 import { Panel } from "@/components/ui/Panel";
@@ -166,6 +167,10 @@ export default async function SummaryPage(props: PageProps<"/">) {
         </div>
         <h1 className="text-title font-semibold">{hello}</h1>
         <p className="mt-1 max-w-[60ch] text-body text-muted">{headline(upcoming, missing, today)}</p>
+        <nav aria-label="Acciones" className="mt-5 flex flex-wrap gap-2">
+          <ActionPillLink href="/suscripciones/nueva" label="Añadir suscripción" icon="plus" />
+          <ActionPillLink href="/suscripciones" label="Mis suscripciones" icon="list" />
+        </nav>
       </header>
       <Notices invitations={invitations} notice={notice} confirmations={confirmations} reminders={reminders} />
 
@@ -275,9 +280,6 @@ function HeroCard({
               {row.currency} ({row.count === 1 ? "1 suscripción" : `${row.count} suscripciones`}).
             </p>
           ))}
-          <ButtonLink href="/suscripciones/nueva" variant="primary" icon="plus" className="mt-6">
-            Añadir suscripción
-          </ButtonLink>
         </div>
         <div className="w-full md:w-72 md:flex-none">
           <SpendDonut

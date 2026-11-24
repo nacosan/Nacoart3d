@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef } from "react";
 import { Icon } from "@/components/ui/Icon";
+import { FLOATING_ACTION_CLASSES } from "@/components/ui/FloatingAction";
 import { Modal } from "@/components/ui/Modal";
 import { ServiceMark } from "@/components/ui/ServiceMark";
 import type { CategoryId } from "@/lib/catalog";
@@ -29,7 +30,7 @@ export function QuickPay({ options }: { options: QuickPayOption[] }) {
         type="button"
         aria-haspopup="dialog"
         onClick={() => dialogRef.current?.showModal()}
-        className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-5 z-20 inline-flex size-14 items-center justify-center rounded-full bg-positive text-surface shadow-lg shadow-black/20 hover:opacity-90"
+        className={FLOATING_ACTION_CLASSES}
       >
         <Icon name="plus" size="lg" label="Anotar un pago" />
       </button>

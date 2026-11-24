@@ -10,6 +10,7 @@ import { SubmitButton } from "@/components/forms/SubmitButton";
 import { ButtonLink } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
 import { CATEGORIES, CATEGORY_IDS } from "@/lib/catalog";
+import { coverageOf } from "@/lib/finance/coverage";
 import { centsToInput, formatMoney, parseAmountToCents, type Currency } from "@/lib/finance/money";
 
 const CATEGORY_OPTIONS = CATEGORY_IDS.map((id) => ({ value: id, label: CATEGORIES[id].name }));
@@ -167,6 +168,7 @@ export function PaymentForm({
   };
   const chosen = renewals.find((row) => row.value === renewal);
   const cents = parseAmountToCents(amount);
+  const coverage = chosen ? coverageOf(chosen.value, billingPeriod, periods) : null;
   // Si hay un error en algo de "Cambiar datos", se abre para verlo.
   const detailsOpen = Boolean(e.renewalDate || e.periods || e.amount || e.concept);
   return (
@@ -181,6 +183,9 @@ export function PaymentForm({
           {periods > 1 ? ` y ${periods - 1} ${periods - 1 === 1 ? "mes más" : "meses más"}` : ""}
         </p>
         <p className="text-figure font-bold tabular-nums">{cents === null ? amount || "—" : formatMoney(cents, currency)}</p>
+        {coverage ? (
+          <p className="mt-1 text-small font-semibold">{coverage.label}</p>
+        ) : null}
       </div>
 
       <Field label="Fecha del pago" name="occurredOn" error={e.occurredOn}>

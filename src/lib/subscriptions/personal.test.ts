@@ -197,3 +197,19 @@ describe("suscripciones personales", () => {
     assert.equal(missingRenewals(sub({ ...member, renewalAnchor: "2026-10-05", trackingFrom: "2026-10-01" }), "2026-11-22")[0].amount, 350);
   });
 });
+
+import { coverageOf } from "../finance/coverage.ts";
+
+describe("periodo que cubre un pago", () => {
+  test("una renovación mensual: de un mes al siguiente", () => {
+    const range = coverageOf("2026-11-23", "monthly", 1);
+    assert.equal(range.label, "23 nov 2026 – 22 dic 2026");
+    assert.equal(range.through, "2026-12-22");
+  });
+
+  test("tres meses y un año", () => {
+    assert.equal(coverageOf("2026-11-23", "monthly", 3).through, "2027-02-22");
+    assert.equal(coverageOf("2026-01-01", "monthly", 12).label, "1 ene 2026 – 31 dic 2026");
+    assert.equal(coverageOf("2026-08-05", "yearly", 1).through, "2027-08-04");
+  });
+});

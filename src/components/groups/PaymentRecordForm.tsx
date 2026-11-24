@@ -7,6 +7,7 @@ import { FormMessage } from "@/components/forms/FormMessage";
 import { EMPTY_FORM_STATE } from "@/components/forms/FormState";
 import { PeriodsField } from "@/components/forms/PeriodsField";
 import { SubmitButton } from "@/components/forms/SubmitButton";
+import { coverageOf } from "@/lib/finance/coverage";
 import { centsToInput, formatMoney, parseAmountToCents, type Currency } from "@/lib/finance/money";
 import { Icon } from "@/components/ui/Icon";
 
@@ -77,6 +78,7 @@ export function PaymentRecordForm({
 
   const chosen = member?.periods.find((item) => item.date === period);
   const cents = parseAmountToCents(amount);
+  const coverage = chosen ? coverageOf(chosen.date, billingPeriod, count) : null;
   // Si hay un error en algo de "Cambiar datos", se abre para verlo.
   const detailsOpen = Boolean(e.memberId || e.renewalDate || e.periods || e.amount || e.note);
   return (
@@ -92,6 +94,9 @@ export function PaymentRecordForm({
           {count > 1 ? ` y ${count - 1} ${count - 1 === 1 ? "mes más" : "meses más"}` : ""}
         </p>
         <p className="text-figure font-bold tabular-nums">{cents === null ? amount || "—" : formatMoney(cents, currency)}</p>
+        {coverage ? (
+          <p className="mt-1 text-small font-semibold">{coverage.label}</p>
+        ) : null}
       </div>
 
       <Field label="Fecha del pago" name="paidOn" error={e.paidOn}>

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
-import { sendPaymentReminder } from "@/app/(app)/grupos/actions";
+import { sendPaymentReminder, voidMemberPayment } from "@/app/(app)/grupos/actions";
+import { voidPayment } from "@/app/(app)/suscripciones/actions";
 import { Avatar } from "@/components/ui/Avatar";
 import { Icon, type IconName } from "@/components/ui/Icon";
 import type { Hue } from "@/lib/catalog";
@@ -18,6 +19,8 @@ export interface CalendarRow {
   isGuest: boolean;
   /** Qué ventana abre "Añadir pago" para esta fila (null: no se puede desde aquí). */
   payAction: "pago" | "cobros" | null;
+  /** Cómo se anula un pago de esta fila: tuyo (ledger) o de un miembro (solo quien paga el plan). */
+  voidKind: "ledger" | "member" | null;
   segments: CalendarSegment[];
 }
 
@@ -190,7 +193,6 @@ export function PaymentCalendar({
       scroller?.removeEventListener("scroll", close);
     };
   }, [selected]);
-  const todayClass = "rounded-full border border-border px-3 py-1 text-small font-semibold hover:bg-active";
 
   return (
     <div>
@@ -202,32 +204,25 @@ export function PaymentCalendar({
         >
           <Icon name="back" label={`Año ${shownYear - 1}`} />
         </Link>
-        <span className="flex items-center gap-2">
-          <span className="text-body font-semibold tabular-nums">{shownYear}</span>
+        <span className="text-body font-semibold tabular-nums">{shownYear}</span>
+        <span className="flex items-center gap-1">
+          <Link
+            href={`${basePath}?anio=${shownYear + 1}`}
+            scroll={false}
+            className="inline-flex size-10 items-center justify-center rounded-full hover:bg-active"
+          >
+            <Icon name="chevron" label={`Año ${shownYear + 1}`} />
+          </Link>
           {year !== currentYear ? (
-            <Link href={`${basePath}?anio=${currentYear}`} scroll={false} className={todayClass}>
-              Hoy
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                setShownYear(currentYear);
-                scrollToFocus();
-              }}
-              className={todayClass}
+            <Link
+              href={`${basePath}?anio=${currentYear}`}
+              scroll={false}
+              className="inline-flex size-10 items-center justify-center rounded-full text-accent-ink hover:bg-active"
             >
-              Hoy
-            </button>
-          )}
+              <Icon name="undo" label={`Volver a ${currentYear}`} />
+            </Link>
+          ) : null}
         </span>
-        <Link
-          href={`${basePath}?anio=${shownYear + 1}`}
-          scroll={false}
-          className="inline-flex size-10 items-center justify-center rounded-full hover:bg-active"
-        >
-          <Icon name="chevron" label={`Año ${shownYear + 1}`} />
-        </Link>
       </div>
 
       {/* Tabla HTML: los meses que cubre un mismo pago se unen con colSpan (sin depender de clases CSS). */}
@@ -341,16 +336,27 @@ export function PaymentCalendar({
               : null
           }
           extra={
-            reminders && selected.row.payAction === "cobros" && ["pending", "overdue", "partial"].includes(selected.segment.status) ? (
-              <ReminderAction
-                subscriptionId={subscriptionId}
-                subscriptionTitle={subscriptionTitle}
-                row={selected.row}
-                segment={selected.segment}
-                monthName={MONTHS_LONG[selected.at.month - 1]}
-                currency={currency}
-              />
-            ) : null
+            <>
+              {reminders && selected.row.payAction === "cobros" && ["pending", "overdue", "partial"].includes(selected.segment.status) ? (
+                <ReminderAction
+                  subscriptionId={subscriptionId}
+                  subscriptionTitle={subscriptionTitle}
+                  row={selected.row}
+                  segment={selected.segment}
+                  monthName={MONTHS_LONG[selected.at.month - 1]}
+                  currency={currency}
+                />
+              ) : null}
+              {selected.row.voidKind && selected.segment.paymentId && (selected.segment.status === "paid" || selected.segment.status === "partial") ? (
+                <VoidAction
+                  key={selected.segment.paymentId}
+                  subscriptionId={subscriptionId}
+                  paymentId={selected.segment.paymentId}
+                  kind={selected.row.voidKind}
+                  grouped={selected.segment.grouped}
+                />
+              ) : null}
+            </>
           }
           onNavigate={() => setSelected(null)}
         />
@@ -428,13 +434,13 @@ function Bubble({
             href={payHref}
             scroll={false}
             onClick={onNavigate}
-            className="-mr-1 -mt-1 inline-flex size-9 flex-none items-center justify-center rounded-full text-positive hover:bg-surface/10"
+            className="-mr-1 -mt-1 inline-flex size-9 flex-none items-center justify-center rounded-full text-positive-soft hover:bg-surface/10"
           >
             <Icon name="plus" size="lg" label="Añadir pago" />
           </Link>
         ) : null}
       </div>
-      {extra ? <div className="mt-2 border-t border-surface/15 pt-2">{extra}</div> : null}
+      {extra ? <div className="mt-2 flex flex-col items-start gap-2 border-t border-surface/15 pt-2 empty:hidden">{extra}</div> : null}
     </div>
   );
 }
@@ -503,5 +509,63 @@ function ReminderAction({
             ? "Enviando…"
             : "Enviar recordatorio"}
     </button>
+  );
+}
+
+/**
+ * Borrar un pago anotado por error. En realidad se anula: deja de contar,
+ * pero queda en el historial marcado como anulado. Pide confirmación.
+ */
+function VoidAction({
+  subscriptionId,
+  paymentId,
+  kind,
+  grouped,
+}: {
+  subscriptionId: string;
+  paymentId: string;
+  kind: "ledger" | "member";
+  grouped: boolean;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [pending, startTransition] = useTransition();
+  if (!confirming) {
+    return (
+      <button type="button" onClick={() => setConfirming(true)} className="flex items-center gap-1.5 font-semibold text-negative-soft hover:underline">
+        <Icon name="trash" size="sm" />
+        Borrar este pago
+      </button>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="opacity-80">
+        {grouped ? "Se borra el pago entero (todos los meses que cubre)." : "Dejará de contar como pagado."} Quedará en el historial como
+        anulado.
+      </p>
+      <div className="flex gap-3">
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() =>
+            startTransition(async () => {
+              if (kind === "member") {
+                await voidMemberPayment(subscriptionId, paymentId);
+              } else {
+                const form = new FormData();
+                form.set("idempotencyKey", crypto.randomUUID());
+                await voidPayment(subscriptionId, paymentId, form);
+              }
+            })
+          }
+          className="font-semibold text-negative-soft hover:underline disabled:opacity-60"
+        >
+          {pending ? "Borrando…" : "Sí, borrar"}
+        </button>
+        <button type="button" onClick={() => setConfirming(false)} className="font-semibold hover:underline">
+          Cancelar
+        </button>
+      </div>
+    </div>
   );
 }

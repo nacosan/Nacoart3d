@@ -3,6 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { Icon, type IconName } from "@/components/ui/Icon";
+import { ACTION_PILL_CLASSES, FLOATING_ACTION_CLASSES } from "@/components/ui/FloatingAction";
 import { Modal } from "@/components/ui/Modal";
 
 export interface Section {
@@ -51,7 +52,7 @@ export function SectionActions({ sections }: { sections: Section[] }) {
               type="button"
               aria-haspopup="dialog"
               onClick={() => open(section.key)}
-              className="flex h-10 items-center gap-2 rounded-full border border-border px-4 text-small font-semibold text-ink hover:bg-surface"
+              className={ACTION_PILL_CLASSES}
             >
               <Icon name={section.icon} className="text-accent-ink" />
               {section.label}
@@ -65,7 +66,7 @@ export function SectionActions({ sections }: { sections: Section[] }) {
           type="button"
           aria-haspopup="dialog"
           onClick={() => open(section.key)}
-          className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] right-5 z-20 inline-flex size-14 items-center justify-center rounded-full bg-positive text-surface shadow-lg shadow-black/20 hover:opacity-90"
+          className={FLOATING_ACTION_CLASSES}
         >
           <Icon name={section.icon} size="lg" label={section.label} />
         </button>
